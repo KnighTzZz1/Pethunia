@@ -43,10 +43,22 @@ protected:
 		float PitchRate;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
 		float JumpHeight;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
+		float MaxStamina;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
+		float maxSpeed = 500.f;
+
 public:	
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	float Stamina;
+	FTimerHandle StaminaRechargeTimer;
 private:
 	bool isOnGround();
+	bool isSprinting;
+	bool regStamina;
+	void regenerateStamina();
+	
 };
