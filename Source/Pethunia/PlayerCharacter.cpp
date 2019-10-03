@@ -9,7 +9,7 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
-
+#include "UnrealNetwork.h"
 
 
 
@@ -19,6 +19,7 @@ APlayerCharacter::APlayerCharacter()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm Component"));
 	SpringArm->TargetArmLength = 0;
 	SpringArm->SetupAttachment(RootComponent);
@@ -31,17 +32,50 @@ APlayerCharacter::APlayerCharacter()
 	TurnRate = 30.f;
 	PitchRate = 30.f;
 	JumpHeight = 45.f;
-	MaxStamina = 500.f;
-	isSprinting = false;
-	Stamina = MaxStamina;
 	GetCharacterMovement()->MaxWalkSpeed = maxSpeed;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->MaxWalkSpeedCrouched = maxSpeed / 2;
+	
+}
+
+void APlayerCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(APlayerCharacter, regStamina);
+	DOREPLIFETIME(APlayerCharacter, isRunning);
+	DOREPLIFETIME(APlayerCharacter, Stamina);
+	DOREPLIFETIME(APlayerCharacter, ReplicatedLocation);
+
 }
 
 // Called when the game starts or when spawned
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+}
+
+void APlayerCharacter::OnRep_ReplicatedLocation()
+{
+	SetActorLocation(ReplicatedLocation);
+}
+
+void APlayerCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	if (HasAuthority())
+	{
+		ReplicatedLocation = GetActorLocation();
+	}
+	if (regStamina && Stamina < MaxStamina)
+	{
+		Stamina += 1.f;
+		if (Stamina == MaxStamina) regStamina = false;
+	}
+	if (!regStamina && isRunning && Stamina > 0 )
+	{
+		Stamina -= 1.f;
+	}
 	
 }
 
@@ -79,26 +113,6 @@ void APlayerCharacter::LookVertical(float value)
 	AddControllerPitchInput(value * PitchRate * GetWorld()->GetDeltaSeconds());
 }
 
-void APlayerCharacter::PlayerJump()
-{
-	if (isOnGround() && Stamina > 0) 
-	{
-		APlayerCharacter::LaunchCharacter(FVector(0.f, 0.f, JumpHeight), false, true);
-		Stamina -= 35.f;
-		GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::regenerateStamina, 2.0f, false);
-	}
-}
-
-void APlayerCharacter::PlayerCrouch()
-{
-	Crouch();
-}
-
-void APlayerCharacter::PlayerProne()
-{
-	UnCrouch();
-}
-
 bool APlayerCharacter::isOnGround()
 {
 	FVector ViewPointLocation;
@@ -114,59 +128,99 @@ bool APlayerCharacter::isOnGround()
 	return isHit;
 }
 
+void APlayerCharacter::Client_PlayerJump()
+{
+	Server_PlayerJump();
+}
+
+void APlayerCharacter::Server_PlayerJump_Implementation()
+{
+	if (isOnGround() && Stamina > 0) 
+	{
+		regStamina = false;
+		Stamina -= 100.f;
+		APlayerCharacter::LaunchCharacter(FVector(0.f, 0.f, JumpHeight), false, true);
+		GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::regenerateStamina, 2.0f, false);
+	}
+}
+
+
+
+bool APlayerCharacter::Server_PlayerJump_Validate()
+{
+	return true;
+}
+
+void APlayerCharacter::PlayerCrouch()
+{
+	Crouch();
+
+}
+void APlayerCharacter::PlayerUncrouch()
+{
+	UnCrouch();
+}
+
+void APlayerCharacter::PlayerProne()
+{
+	
+}
+
+
 void APlayerCharacter::regenerateStamina()
 {
 	regStamina = true;
 }
 
-void APlayerCharacter::PlayerSprint()
+void APlayerCharacter::Client_PlayerSprint()
 {
-	if (Stamina > 0) {
-		GetCharacterMovement()->MaxWalkSpeed = maxSpeed * 1.5;
-		isSprinting = true;
-		regStamina = false;
-	}
+	
+	GetCharacterMovement()->MaxWalkSpeed = maxSpeed * 1.5;
+	Server_PlayerSprint();
 }
 
-void APlayerCharacter::PlayerStopSprint()
+void APlayerCharacter::Server_PlayerSprint_Implementation()
+{
+	isRunning = true;
+	regStamina = false;
+	GetCharacterMovement()->MaxWalkSpeed = maxSpeed * 1.5;
+}
+
+bool APlayerCharacter::Server_PlayerSprint_Validate()
+{
+	return true;
+}
+
+void APlayerCharacter::Client_PlayerStopSprint()
 {
 	GetCharacterMovement()->MaxWalkSpeed = maxSpeed;
-	isSprinting = false;
+	Server_PlayerStopSprint();
+}
+
+void APlayerCharacter::Server_PlayerStopSprint_Implementation()
+{
+	isRunning = false;
+	GetCharacterMovement()->MaxWalkSpeed = maxSpeed;
 	GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::regenerateStamina, 2.0f, false);
 }
 
-// Called every frame
-void APlayerCharacter::Tick(float DeltaTime)
+bool APlayerCharacter::Server_PlayerStopSprint_Validate()
 {
-	Super::Tick(DeltaTime);
-	UE_LOG(LogTemp,Warning,TEXT("%f"),Stamina);
-	if (isSprinting && Stamina > 0)
-	{
-		Stamina -= 1.f;
-		if(Stamina <= 0)
-		{
-			GetCharacterMovement()->MaxWalkSpeed = maxSpeed;
-		}
-	}
-	if (!isSprinting && Stamina < MaxStamina && regStamina)
-	{
-		Stamina += 0.5f;
-		if (Stamina >= MaxStamina)
-		{
-			regStamina = false;
-		}
-	}
+	return true;
 }
+
+
 
 // Called to bind functionality to input
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::PlayerJump);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::Client_PlayerJump);
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerCharacter::PlayerCrouch);
-	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerCharacter::PlayerSprint);
-	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &APlayerCharacter::PlayerStopSprint);
+	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &APlayerCharacter::PlayerUncrouch);
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerCharacter::Client_PlayerSprint);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &APlayerCharacter::Client_PlayerStopSprint);
 	PlayerInputComponent->BindAction("Prone", IE_Pressed, this, &APlayerCharacter::PlayerProne);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &APlayerCharacter::MoveForward);

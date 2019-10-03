@@ -31,10 +31,19 @@ protected:
 	void MoveRight(float value);
 	void LookHorizontal(float value);
 	void LookVertical(float value);
-	void PlayerJump();
+	UFUNCTION(Server,Reliable, WithValidation)
+		void Server_PlayerJump();
+	void Client_PlayerJump();
+
 	void PlayerCrouch();
-	void PlayerSprint();
-	void PlayerStopSprint();
+	void PlayerUncrouch();
+
+	void Client_PlayerSprint();
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Server_PlayerSprint();
+	void Client_PlayerStopSprint();
+	UFUNCTION(Server, Reliable, WithValidation)
+		void Server_PlayerStopSprint();
 	void PlayerProne();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -44,21 +53,34 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
 		float JumpHeight;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
-		float MaxStamina;
+		float MaxStamina = 500.f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
 		float maxSpeed = 500.f;
 
+	
+	UPROPERTY(ReplicatedUsing = OnRep_ReplicatedLocation)
+		FVector ReplicatedLocation;
+	UFUNCTION()
+		void OnRep_ReplicatedLocation();
+
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
+		float Stamina = 500.f;
+	
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
+		bool isRunning;
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
+		bool regStamina;
 public:	
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	float Stamina;
 	FTimerHandle StaminaRechargeTimer;
 private:
 	bool isOnGround();
-	bool isSprinting;
-	bool regStamina;
 	void regenerateStamina();
+	
 	
 };
