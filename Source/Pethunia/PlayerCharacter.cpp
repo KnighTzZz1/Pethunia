@@ -75,6 +75,11 @@ void APlayerCharacter::Tick(float DeltaTime)
 	if (!regStamina && isRunning && Stamina > 0 )
 	{
 		Stamina -= 1.f;
+		if (Stamina <= 0)
+		{
+			Client_PlayerStopSprint();
+			Server_PlayerStopSprint();
+		}
 	}
 	
 }
@@ -135,7 +140,7 @@ void APlayerCharacter::Client_PlayerJump()
 
 void APlayerCharacter::Server_PlayerJump_Implementation()
 {
-	if (isOnGround() && Stamina > 0) 
+	if (isOnGround() && Stamina > 100) 
 	{
 		regStamina = false;
 		Stamina -= 100.f;
@@ -143,8 +148,6 @@ void APlayerCharacter::Server_PlayerJump_Implementation()
 		GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::regenerateStamina, 2.0f, false);
 	}
 }
-
-
 
 bool APlayerCharacter::Server_PlayerJump_Validate()
 {
@@ -166,7 +169,6 @@ void APlayerCharacter::PlayerProne()
 	
 }
 
-
 void APlayerCharacter::regenerateStamina()
 {
 	regStamina = true;
@@ -174,9 +176,10 @@ void APlayerCharacter::regenerateStamina()
 
 void APlayerCharacter::Client_PlayerSprint()
 {
-	
-	GetCharacterMovement()->MaxWalkSpeed = maxSpeed * 1.5;
-	Server_PlayerSprint();
+	if (Stamina > 0) {
+		GetCharacterMovement()->MaxWalkSpeed = maxSpeed * 1.5;
+		Server_PlayerSprint();
+	}
 }
 
 void APlayerCharacter::Server_PlayerSprint_Implementation()
@@ -188,7 +191,9 @@ void APlayerCharacter::Server_PlayerSprint_Implementation()
 
 bool APlayerCharacter::Server_PlayerSprint_Validate()
 {
-	return true;
+	if (Stamina > 0)
+		return true;
+	return false;
 }
 
 void APlayerCharacter::Client_PlayerStopSprint()
@@ -208,8 +213,6 @@ bool APlayerCharacter::Server_PlayerStopSprint_Validate()
 {
 	return true;
 }
-
-
 
 // Called to bind functionality to input
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
