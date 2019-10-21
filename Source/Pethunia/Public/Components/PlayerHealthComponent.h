@@ -20,6 +20,9 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HealthComponent")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
 		float Health;
+	
+	UFUNCTION(BlueprintCallable)
+	void TakeDamage(float damage);
 };

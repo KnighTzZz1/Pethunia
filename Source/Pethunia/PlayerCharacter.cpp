@@ -10,8 +10,10 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
 #include "UnrealNetwork.h"
-
-
+#include "BasicBullet.generated.h"
+#include "DrawDebugHelpers.h"
+#include "PlayerHealthComponent.h"
+#include "PlayerEnergyComponent.h"
 
 // Sets default values
 APlayerCharacter::APlayerCharacter()
@@ -19,7 +21,9 @@ APlayerCharacter::APlayerCharacter()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 
 	PrimaryActorTick.bCanEverTick = true;
-	bReplicates = true;
+	HealthComponent = CreateDefaultSubobject<UPlayerHealthComponent>(TEXT("Player Health Component"));
+	EnergyComponent = CreateDefaultSubobject<UPlayerEnergyComponent>(TEXT("Player Energy Component"));
+
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm Component"));
 	SpringArm->TargetArmLength = 0;
 	SpringArm->SetupAttachment(RootComponent);
@@ -38,16 +42,6 @@ APlayerCharacter::APlayerCharacter()
 	
 }
 
-void APlayerCharacter::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(APlayerCharacter, regStamina);
-	DOREPLIFETIME(APlayerCharacter, isRunning);
-	DOREPLIFETIME(APlayerCharacter, Stamina);
-	DOREPLIFETIME(APlayerCharacter, ReplicatedLocation);
-
-}
-
 // Called when the game starts or when spawned
 void APlayerCharacter::BeginPlay()
 {
@@ -55,18 +49,9 @@ void APlayerCharacter::BeginPlay()
 	
 }
 
-void APlayerCharacter::OnRep_ReplicatedLocation()
-{
-	SetActorLocation(ReplicatedLocation);
-}
-
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (HasAuthority())
-	{
-		ReplicatedLocation = GetActorLocation();
-	}
 	if (regStamina && Stamina < MaxStamina)
 	{
 		Stamina += 1.f;
@@ -77,8 +62,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 		Stamina -= 1.f;
 		if (Stamina <= 0)
 		{
-			Client_PlayerStopSprint();
-			Server_PlayerStopSprint();
+			PlayerStopSprint();
 		}
 	}
 	
@@ -105,6 +89,7 @@ void APlayerCharacter::MoveRight(float value)
 
 		FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		AddMovementInput(Direction, value);
+		
 	}
 }
 
@@ -133,12 +118,7 @@ bool APlayerCharacter::isOnGround()
 	return isHit;
 }
 
-void APlayerCharacter::Client_PlayerJump()
-{
-	Server_PlayerJump();
-}
-
-void APlayerCharacter::Server_PlayerJump_Implementation()
+void APlayerCharacter::PlayerJump()
 {
 	if (isOnGround() && Stamina > 100) 
 	{
@@ -147,11 +127,6 @@ void APlayerCharacter::Server_PlayerJump_Implementation()
 		APlayerCharacter::LaunchCharacter(FVector(0.f, 0.f, JumpHeight), false, true);
 		GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::regenerateStamina, 2.0f, false);
 	}
-}
-
-bool APlayerCharacter::Server_PlayerJump_Validate()
-{
-	return true;
 }
 
 void APlayerCharacter::PlayerCrouch()
@@ -174,44 +149,18 @@ void APlayerCharacter::regenerateStamina()
 	regStamina = true;
 }
 
-void APlayerCharacter::Client_PlayerSprint()
-{
-	if (Stamina > 0) {
-		GetCharacterMovement()->MaxWalkSpeed = maxSpeed * 1.5;
-		Server_PlayerSprint();
-	}
-}
-
-void APlayerCharacter::Server_PlayerSprint_Implementation()
+void APlayerCharacter::PlayerSprint()
 {
 	isRunning = true;
 	regStamina = false;
 	GetCharacterMovement()->MaxWalkSpeed = maxSpeed * 1.5;
 }
 
-bool APlayerCharacter::Server_PlayerSprint_Validate()
-{
-	if (Stamina > 0)
-		return true;
-	return false;
-}
-
-void APlayerCharacter::Client_PlayerStopSprint()
-{
-	GetCharacterMovement()->MaxWalkSpeed = maxSpeed;
-	Server_PlayerStopSprint();
-}
-
-void APlayerCharacter::Server_PlayerStopSprint_Implementation()
+void APlayerCharacter::PlayerStopSprint()
 {
 	isRunning = false;
 	GetCharacterMovement()->MaxWalkSpeed = maxSpeed;
 	GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::regenerateStamina, 2.0f, false);
-}
-
-bool APlayerCharacter::Server_PlayerStopSprint_Validate()
-{
-	return true;
 }
 
 // Called to bind functionality to input
@@ -219,12 +168,13 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::Client_PlayerJump);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::PlayerJump);
 	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerCharacter::PlayerCrouch);
 	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &APlayerCharacter::PlayerUncrouch);
-	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerCharacter::Client_PlayerSprint);
-	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &APlayerCharacter::Client_PlayerStopSprint);
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerCharacter::PlayerSprint);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &APlayerCharacter::PlayerStopSprint);
 	PlayerInputComponent->BindAction("Prone", IE_Pressed, this, &APlayerCharacter::PlayerProne);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &APlayerCharacter::PlayerShootWithLineTrace);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &APlayerCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &APlayerCharacter::MoveRight);
@@ -233,3 +183,21 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 }
 
 
+
+void APlayerCharacter::PlayerShootWithLineTrace()
+{
+	
+}
+
+void APlayerCharacter::PlayerShootWithSpawningBullet()
+{
+
+}
+
+// TODO: 
+/*
+	Code Shooting
+	Code Health System
+	Code Bullet System
+
+*/

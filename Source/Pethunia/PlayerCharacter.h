@@ -9,6 +9,9 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UStaticMeshComponent;
+class UPlayerHealthComponent;
+class UPlayerEnergyComponent;
+
 UCLASS()
 class PETHUNIA_API APlayerCharacter : public ACharacter
 {
@@ -25,6 +28,10 @@ public:
 		UCameraComponent* Camera;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
 		UStaticMeshComponent* PlayerStaticMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
+		UPlayerHealthComponent* HealthComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
+		UPlayerEnergyComponent* EnergyComponent;
 
 protected:
 	virtual void BeginPlay() override;
@@ -39,6 +46,9 @@ protected:
 	void PlayerUncrouch();
 	void PlayerProne();
 	
+	void PlayerShootWithLineTrace();
+	void PlayerShootWithSpawningBullet();
+
 	//Editable Properties
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 		float TurnRate;
@@ -52,34 +62,31 @@ protected:
 		float maxSpeed = 500.f;
 
 	// Server-Client Functions
-	UFUNCTION(Server,Reliable, WithValidation)
-		void Server_PlayerJump();
-	void Client_PlayerJump();
+	UFUNCTION()
+		void PlayerJump();
 	
-	UFUNCTION(Server, Reliable, WithValidation)
-		void Server_PlayerSprint();
-	void Client_PlayerSprint();
 	
-	UFUNCTION(Server, Reliable, WithValidation)
-		void Server_PlayerStopSprint();
-	void Client_PlayerStopSprint();
+	UFUNCTION()
+		void PlayerSprint();
 
 	
-	UPROPERTY(ReplicatedUsing = OnRep_ReplicatedLocation)
-		FVector ReplicatedLocation;
 	UFUNCTION()
-		void OnRep_ReplicatedLocation();
+		void PlayerStopSprint();
+	
 
 	// Replicated Variables
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
+	UPROPERTY(BlueprintReadOnly, Category = "Player")
 		float Stamina = 500.f;
 	
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
+	UPROPERTY(BlueprintReadOnly, Category = "Player")
 		bool isRunning;
 
-	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Player")
+	UPROPERTY(BlueprintReadOnly, Category = "Player")
 		bool regStamina;
-public:	
+public:		
+	
+
+
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

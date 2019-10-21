@@ -1,7 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.	
 
 
 #include "PlayerHealthComponent.h"
+
 
 // Sets default values for this component's properties
 UPlayerHealthComponent::UPlayerHealthComponent()
@@ -17,4 +18,12 @@ void UPlayerHealthComponent::BeginPlay()
 
 }
 
+void UPlayerHealthComponent::TakeDamage(float damage)
+{
+	Health -= damage;
+	if(Health <= 0)
+	{
+		GetOwner()->Destroy();
+	}
+}
 
