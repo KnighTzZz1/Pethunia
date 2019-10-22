@@ -32,7 +32,8 @@ public:
 		float MaxEnergy = 100.f;
 	UFUNCTION(BlueprintCallable)
 		void UseEnergy(float value);
-
+	UFUNCTION(BlueprintCallable)
+		void GetEnergy(float value);
 
 private:
 

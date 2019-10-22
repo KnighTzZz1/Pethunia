@@ -54,3 +54,12 @@ void UPlayerEnergyComponent::regenerateEnergyFunction()
 {
 	regEnergy = true;
 }
+
+void UPlayerEnergyComponent::GetEnergy(float value)
+{
+	if (Energy < MaxEnergy)
+	{
+		Energy += value;
+	}
+	if (Energy >= MaxEnergy) Energy = MaxEnergy;
+}
