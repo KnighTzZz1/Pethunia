@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "PlayerCharacter.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
@@ -15,95 +14,94 @@
 #include "PlayerHealthComponent.h"
 #include "PlayerEnergyComponent.h"
 
-// Sets default values
+
 APlayerCharacter::APlayerCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-
 	PrimaryActorTick.bCanEverTick = true;
+
 	HealthComponent = CreateDefaultSubobject<UPlayerHealthComponent>(TEXT("Player Health Component"));
 	EnergyComponent = CreateDefaultSubobject<UPlayerEnergyComponent>(TEXT("Player Energy Component"));
 
+	/*
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm Component"));
 	SpringArm->TargetArmLength = 0;
 	SpringArm->SetupAttachment(RootComponent);
+	*/
 	
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
 
-	PlayerStaticMesh = CreateDefaultSubobject <UStaticMeshComponent>(TEXT("Static Mesh"));
-	PlayerStaticMesh->SetupAttachment(RootComponent);
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
+	StaticMesh->SetupAttachment(RootComponent);
+
 	TurnRate = 30.f;
 	PitchRate = 30.f;
 	JumpHeight = 45.f;
-	GetCharacterMovement()->MaxWalkSpeed = maxSpeed;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
-	GetCharacterMovement()->MaxWalkSpeedCrouched = maxSpeed / 2;
-	
+	GetCharacterMovement()->MaxWalkSpeedCrouched = NormalSpeed / 2;
 }
 
 // Called when the game starts or when spawned
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (regStamina && Stamina < MaxStamina)
+	if (RegStamina && Stamina < MaxStamina)
 	{
 		Stamina += 1.f;
-		if (Stamina == MaxStamina) regStamina = false;
+		if (Stamina == MaxStamina) RegStamina = false;
 	}
-	if (!regStamina && isRunning && Stamina > 0 )
+	if (!RegStamina && IsRunning && Stamina > 0 )
 	{
 		Stamina -= 1.f;
 		if (Stamina <= 0)
 		{
-			PlayerStopSprint();
+			StopSprint();
 		}
 	}
-	
 }
 
-void APlayerCharacter::MoveForward(float value)
+void APlayerCharacter::MoveForward(float Value)
 {
-	if (Controller && value != 0.f)
+	if (Controller && Value != 0.f)
 	{
 		FRotator ControllerRotation = Controller->GetControlRotation();
 		FRotator YawRotation = FRotator(0, ControllerRotation.Yaw, 0);
 
 		FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		AddMovementInput(Direction, value);
+		AddMovementInput(Direction, Value);
 	}
 }
 
-void APlayerCharacter::MoveRight(float value)
+void APlayerCharacter::MoveRight(float Value)
 {
-	if (Controller && value != 0.0f)
+	if (Controller && Value != 0.0f)
 	{
 		FRotator ControllerRotation = Controller->GetControlRotation();
 		FRotator YawRotation = FRotator(0,ControllerRotation.Yaw, 0);
 
 		FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		AddMovementInput(Direction, value);
-		
+		AddMovementInput(Direction, Value);
 	}
 }
 
-void APlayerCharacter::LookHorizontal(float value)
+void APlayerCharacter::LookHorizontal(float Value)
 {
-	AddControllerYawInput(value * TurnRate * GetWorld()->GetDeltaSeconds());
+	AddControllerYawInput(Value * TurnRate * GetWorld()->GetDeltaSeconds());
 }
 
-void APlayerCharacter::LookVertical(float value)
+void APlayerCharacter::LookVertical(float Value)
 {
-	AddControllerPitchInput(value * PitchRate * GetWorld()->GetDeltaSeconds());
+	AddControllerPitchInput(Value * PitchRate * GetWorld()->GetDeltaSeconds());
 }
 
-bool APlayerCharacter::isOnGround()
+bool APlayerCharacter::IsOnGround()
 {
 	FVector ViewPointLocation;
 	FRotator ViewPointRotation;
@@ -118,49 +116,39 @@ bool APlayerCharacter::isOnGround()
 	return isHit;
 }
 
-void APlayerCharacter::PlayerJump()
+void APlayerCharacter::Jump()
 {
-	if (isOnGround() && Stamina > 100) 
+	if (IsOnGround() && Stamina > 100) 
 	{
-		regStamina = false;
+		RegStamina = false;
 		Stamina -= 100.f;
 		APlayerCharacter::LaunchCharacter(FVector(0.f, 0.f, JumpHeight), false, true);
-		GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::regenerateStamina, 2.0f, false);
+		GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::SetRegStamina(true), 2.0f, false);
 	}
 }
 
-void APlayerCharacter::PlayerCrouch()
-{
-	Crouch();
-
-}
-void APlayerCharacter::PlayerUncrouch()
-{
-	UnCrouch();
-}
-
-void APlayerCharacter::PlayerProne()
+void APlayerCharacter::Crouch()
 {
 	
 }
 
-void APlayerCharacter::regenerateStamina()
+void APlayerCharacter::SetRegStaminaTrue()
 {
-	regStamina = true;
+	RegStamina = true;
 }
 
-void APlayerCharacter::PlayerSprint()
+void APlayerCharacter::StartSprint()
 {
-	isRunning = true;
-	regStamina = false;
-	GetCharacterMovement()->MaxWalkSpeed = maxSpeed * 1.5;
+	IsRunning = true;
+	RegStamina = false;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed * SprintMultiplier;
 }
 
-void APlayerCharacter::PlayerStopSprint()
+void APlayerCharacter::StopSprint()
 {
-	isRunning = false;
-	GetCharacterMovement()->MaxWalkSpeed = maxSpeed;
-	GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::regenerateStamina, 2.0f, false);
+	IsRunning = false;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
+	GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::RegenerateStamina, StaminaWaitTime, false);
 }
 
 // Called to bind functionality to input
@@ -168,36 +156,13 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::PlayerJump);
-	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerCharacter::PlayerCrouch);
-	PlayerInputComponent->BindAction("Crouch", IE_Released, this, &APlayerCharacter::PlayerUncrouch);
-	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerCharacter::PlayerSprint);
-	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &APlayerCharacter::PlayerStopSprint);
-	PlayerInputComponent->BindAction("Prone", IE_Pressed, this, &APlayerCharacter::PlayerProne);
-	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &APlayerCharacter::PlayerShootWithLineTrace);
+	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &APlayerCharacter::Jump);
+	PlayerInputComponent->BindAction("Crouch", IE_Pressed, this, &APlayerCharacter::Crouch);
+	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &APlayerCharacter::Sprint);
+	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &APlayerCharacter::StopSprint);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &APlayerCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &APlayerCharacter::MoveRight);
 	PlayerInputComponent->BindAxis("LookHorizontal", this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxis("LookVertical", this, &APawn::AddControllerPitchInput);
 }
-
-
-
-void APlayerCharacter::PlayerShootWithLineTrace()
-{
-	
-}
-
-void APlayerCharacter::PlayerShootWithSpawningBullet()
-{
-
-}
-
-// TODO: 
-/*
-	Code Shooting
-	Code Health System
-	Code Bullet System
-
-*/
