@@ -20,8 +20,10 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HealthComponent")
 		float Health;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HealthComponent")
+		float MaxHealth;
 	
 	UFUNCTION(BlueprintCallable)
 	void TakeDamage(float damage);

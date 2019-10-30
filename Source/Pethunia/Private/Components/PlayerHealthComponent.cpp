@@ -7,7 +7,8 @@
 // Sets default values for this component's properties
 UPlayerHealthComponent::UPlayerHealthComponent()
 {
-	Health = 100.f;
+	MaxHealth = 100.f;
+	Health = MaxHealth;
 }
 
 

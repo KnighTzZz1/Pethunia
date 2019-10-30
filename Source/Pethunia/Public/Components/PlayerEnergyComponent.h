@@ -26,7 +26,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player")
 		float RegAmmount;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
 		float Energy;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player")
 		float MaxEnergy = 100.f;

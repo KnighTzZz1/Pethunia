@@ -24,7 +24,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 		UCameraComponent* Camera;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
-		UStaticMeshComponent* StaticMesh;
+		UStaticMeshComponent* PlayerStaticMesh;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
 		UPlayerHealthComponent* HealthComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
@@ -43,28 +43,39 @@ protected:
 	void LookVertical(float value);
 
 	void Jump();
-	void Crouch();
-	void Sprint();
-	void StopSprint();
-
+	void CrouchStart();
+	void CrouchStop();
+	void SprintStart();
+	void SprintStop();
+	
 	// Editable Properties
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 		float TurnRate;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 		float PitchRate;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0", ClampMax = "2000"))
 		float JumpHeight;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
-		float MaxStamina;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0"))
 		float NormalSpeed;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
-		float SprintMultiplier;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "1.0", ClampMax = "5.0"))
+		float SprintSpeedMultiplier;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+		float CrouchSpeedMultiplier;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0"))
+		float MaxStamina;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0"))
 		float StaminaWaitTime;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+		float StaminaRegenMultiplier;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "50"))
+		float StaminaCostOnJump;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "5"))
+		float StaminaCostOnSprint;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
-		float Stamina;
+		float CurrentStamina;
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
 		bool IsRunning;
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
