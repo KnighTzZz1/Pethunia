@@ -30,10 +30,14 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
 		UPlayerEnergyComponent* EnergyComponent;
 
+	virtual void DashAbility() {};
+
 	void Tick(float DeltaTime) override;
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	FTimerHandle StaminaRechargeTimer;
 protected:
+
+
 	void BeginPlay() override;
 
 	// Movement

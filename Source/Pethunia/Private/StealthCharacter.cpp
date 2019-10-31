@@ -7,3 +7,8 @@ void AStealthCharacter::Tick(float DeltaTime)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Tick Working"));
 }
+
+void AStealthCharacter::DashAbility()
+{
+	UE_LOG(LogTemp, Error, TEXT("DashAbility Working"));
+}

@@ -16,4 +16,8 @@ class PETHUNIA_API AStealthCharacter : public APlayerCharacter
 	
 public:
 	virtual void Tick(float DeltaTime);
+	
+	
+	virtual void DashAbility() override;
+
 };
