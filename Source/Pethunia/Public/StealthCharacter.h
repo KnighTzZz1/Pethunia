@@ -6,6 +6,8 @@
 #include "PlayerCharacter.h"
 #include "StealthCharacter.generated.h"
 
+class UCameraComponent;
+
 /**
  * 
  */
@@ -17,7 +19,11 @@ class PETHUNIA_API AStealthCharacter : public APlayerCharacter
 public:
 	virtual void Tick(float DeltaTime);
 	
-	
-	virtual void DashAbility() override;
 
+	virtual void DashAbility() override;
+	UFUNCTION(BlueprintImplementableEvent)
+		void Dash();
+
+private:
+	
 };

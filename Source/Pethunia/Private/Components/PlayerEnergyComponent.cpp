@@ -11,9 +11,9 @@ UPlayerEnergyComponent::UPlayerEnergyComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
+	DashCost = 20.f;
 	regEnergy = false;
-	Energy = MaxEnergy;
+	CurrentEnergy = MaxEnergy;
 	RegAmmount = 0.1f;
 }
 
@@ -24,25 +24,25 @@ void UPlayerEnergyComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
-
+//
 // Called every frame
 void UPlayerEnergyComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (Energy < MaxEnergy && regEnergy)
+	if (CurrentEnergy < MaxEnergy && regEnergy)
 	{
-		Energy += RegAmmount;
-		if (Energy == MaxEnergy) regEnergy = false;
+		CurrentEnergy += RegAmmount;
+		if (CurrentEnergy == MaxEnergy) regEnergy = false;
 	}
 }
 
-void UPlayerEnergyComponent::UseEnergy(float value)
+void UPlayerEnergyComponent::UseEnergy()
 {
-	if (Energy - value >= 0)
+	if (CurrentEnergy - DashCost >= 0)
 	{
 		regEnergy = false;
-		Energy -= value;
+		CurrentEnergy -= DashCost;
 		GetWorld()->GetTimerManager().SetTimer(EnergyRechargeTimer, this, &UPlayerEnergyComponent::regenerateEnergyFunction, 2.0f, false);
 	}
 }
@@ -54,9 +54,9 @@ void UPlayerEnergyComponent::regenerateEnergyFunction()
 
 void UPlayerEnergyComponent::GetEnergy(float value)
 {
-	if (Energy < MaxEnergy)
+	if (CurrentEnergy < MaxEnergy)
 	{
-		Energy += value;
+		CurrentEnergy += value;
 	}
-	if (Energy >= MaxEnergy) Energy = MaxEnergy;
+	if (CurrentEnergy >= MaxEnergy) CurrentEnergy = MaxEnergy;
 }

@@ -24,6 +24,7 @@ APlayerCharacter::APlayerCharacter()
 
 	HealthComponent = CreateDefaultSubobject<UPlayerHealthComponent>(TEXT("Player Health Component"));
 	EnergyComponent = CreateDefaultSubobject<UPlayerEnergyComponent>(TEXT("Player Energy Component"));
+	this->AddInstanceComponent(EnergyComponent);
 
 	
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm Component"));
@@ -34,7 +35,7 @@ APlayerCharacter::APlayerCharacter()
 	
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	Camera->SetupAttachment(SpringArm);
-
+	
 	PlayerStaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 	PlayerStaticMesh->SetupAttachment(RootComponent);
 

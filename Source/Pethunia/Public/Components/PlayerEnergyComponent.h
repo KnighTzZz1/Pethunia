@@ -23,20 +23,22 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player")
-		float RegAmmount;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
+		float RegAmmount;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player", meta = (ClampMin = "0.0"))
+		float DashCost;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player")
-		float Energy;
+		float CurrentEnergy;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player")
 		float MaxEnergy = 100.f;
 	UFUNCTION(BlueprintCallable)
-		void UseEnergy(float value);
+		void UseEnergy();
 	UFUNCTION(BlueprintCallable)
 		void GetEnergy(float value);
 
 private:
-
+	bool test;
 	bool regEnergy;
 	void regenerateEnergyFunction();
 	FTimerHandle EnergyRechargeTimer;

@@ -2,13 +2,15 @@
 
 
 #include "StealthCharacter.h"
+#include "PlayerEnergyComponent.h"
 
 void AStealthCharacter::Tick(float DeltaTime)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Tick Working"));
-}
+	Super::Tick(DeltaTime);
+}	
 
 void AStealthCharacter::DashAbility()
 {
-	UE_LOG(LogTemp, Error, TEXT("DashAbility Working"));
+	Dash();
 }
+
