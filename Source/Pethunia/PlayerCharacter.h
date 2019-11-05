@@ -51,7 +51,9 @@ protected:
 	void CrouchStop();
 	void SprintStart();
 	void SprintStop();
-	
+	virtual void Power1Activate() {};
+	virtual void Power1Deactivate() {};
+public:	
 	// Editable Properties
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
 		float TurnRate;

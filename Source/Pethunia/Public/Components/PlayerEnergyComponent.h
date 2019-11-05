@@ -33,7 +33,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player")
 		float MaxEnergy = 100.f;
 	UFUNCTION(BlueprintCallable)
-		void UseEnergy();
+		void UseEnergy(float value);
 	UFUNCTION(BlueprintCallable)
 		void GetEnergy(float value);
 

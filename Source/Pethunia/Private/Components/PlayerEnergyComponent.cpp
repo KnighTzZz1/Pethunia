@@ -37,12 +37,12 @@ void UPlayerEnergyComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	}
 }
 
-void UPlayerEnergyComponent::UseEnergy()
+void UPlayerEnergyComponent::UseEnergy(float value)
 {
-	if (CurrentEnergy - DashCost >= 0)
+	if (CurrentEnergy - value >= 0)
 	{
 		regEnergy = false;
-		CurrentEnergy -= DashCost;
+		CurrentEnergy -= value;
 		GetWorld()->GetTimerManager().SetTimer(EnergyRechargeTimer, this, &UPlayerEnergyComponent::regenerateEnergyFunction, 2.0f, false);
 	}
 }
