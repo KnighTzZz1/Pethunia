@@ -13,6 +13,7 @@
 #include "DrawDebugHelpers.h"
 #include "PlayerHealthComponent.h"
 #include "PlayerEnergyComponent.h"
+#include "Components/CapsuleComponent.h"
 
 #define printout(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, TEXT(x));}
 
@@ -26,6 +27,10 @@ APlayerCharacter::APlayerCharacter()
 	EnergyComponent = CreateDefaultSubobject<UPlayerEnergyComponent>(TEXT("Player Energy Component"));
 	this->AddInstanceComponent(EnergyComponent);
 
+	TriggerCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Trigger Component"));
+	TriggerCapsule->InitCapsuleSize(34.f, 88.f);
+	TriggerCapsule->SetCollisionProfileName(TEXT("Trigger"));
+	TriggerCapsule->SetupAttachment(RootComponent);
 	
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm Component"));
 	SpringArm->TargetArmLength = 0;
@@ -38,6 +43,8 @@ APlayerCharacter::APlayerCharacter()
 	
 	PlayerStaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
 	PlayerStaticMesh->SetupAttachment(RootComponent);
+	TriggerCapsule->OnComponentBeginOverlap.AddDynamic(this, &APlayerCharacter::OverlapBeginEvent);
+	TriggerCapsule->OnComponentEndOverlap.AddDynamic(this, &APlayerCharacter::OverlapEndEvent);
 
 	TurnRate = 30.f;
 	PitchRate = 30.f;
@@ -47,17 +54,48 @@ APlayerCharacter::APlayerCharacter()
 	CurrentStamina = MaxStamina;
 	IsRunning = false;
 	RegStamina = false;
+	IsOnLadder = false;
 	CrouchSpeedMultiplier = 0.5f;
 	StaminaCostOnJump = 100.f;
 	StaminaWaitTime = 2.f;
 	StaminaRegenMultiplier = 1.f;
 	StaminaCostOnSprint = 0.5f;
 	SprintSpeedMultiplier = 1.8f;
-
+	
 
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = NormalSpeed * CrouchSpeedMultiplier;
+}
+
+
+void APlayerCharacter::OverlapBeginEvent(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OtherActor && OtherActor != this && OtherComp)
+	{
+		if (OtherActor->ActorHasTag(FName(TEXT("Ladder"))))
+		{
+			UE_LOG(LogTemp, Error, TEXT("Ladder Detected"));
+			IsOnLadder = true;
+			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
+			CurrentLadderLocation = OtherActor->GetActorLocation();
+			
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Overlaping"));
+	}
+}
+
+void APlayerCharacter::OverlapEndEvent(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (OtherActor && OtherActor != this && OtherComp)
+	{
+		if (OtherActor->ActorHasTag(FName(TEXT("Ladder"))))
+		{
+			IsOnLadder = false;
+			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Stopped overlaping"));
+	}
 }
 
 // Called when the game starts or when spawned
@@ -88,17 +126,25 @@ void APlayerCharacter::MoveForward(float Value)
 {
 	if (Controller && Value != 0.f)
 	{
-		FRotator ControllerRotation = Controller->GetControlRotation();
-		FRotator YawRotation = FRotator(0, ControllerRotation.Yaw, 0);
+		if (IsOnLadder)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Trying to move on ladder"));
+			AddMovementInput(GetActorUpVector(), Value);
+		}
+		else
+		{
+			FRotator ControllerRotation = Controller->GetControlRotation();
+			FRotator YawRotation = FRotator(0, ControllerRotation.Yaw, 0);
 
-		FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		AddMovementInput(Direction, Value);
+			FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+			AddMovementInput(Direction, Value);
+		}
 	}
 }
 
 void APlayerCharacter::MoveRight(float Value)
 {
-	if (Controller && Value != 0.0f)
+	if (Controller && Value != 0.0f && !IsOnLadder)
 	{
 		FRotator ControllerRotation = Controller->GetControlRotation();
 		FRotator YawRotation = FRotator(0,ControllerRotation.Yaw, 0);
@@ -135,7 +181,15 @@ bool APlayerCharacter::IsOnGround()
 
 void APlayerCharacter::Jump()
 {
-	if (IsOnGround() && CurrentStamina > StaminaCostOnJump)
+	if (IsOnLadder)
+	{
+		FVector Distance = GetActorLocation() - CurrentLadderLocation;
+		UE_LOG(LogTemp, Error, TEXT("Direction Is: %s"), *Distance.ToString());
+		FVector Direction = FVector(Distance.X, Distance.Y, 0);
+		APlayerCharacter::LaunchCharacter(Direction.GetSafeNormal() * 1000, false, true);
+		
+	}
+	else if (IsOnGround() && CurrentStamina > StaminaCostOnJump)
 	{
 		RegStamina = false;
 		CurrentStamina -= StaminaCostOnJump;
