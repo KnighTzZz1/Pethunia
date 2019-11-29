@@ -75,13 +75,13 @@ void APlayerCharacter::OverlapBeginEvent(class UPrimitiveComponent* OverlappedCo
 	{
 		if (OtherActor->ActorHasTag(FName(TEXT("Ladder"))))
 		{
-			UE_LOG(LogTemp, Error, TEXT("Ladder Detected"));
 			IsOnLadder = true;
 			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 			CurrentLadderLocation = OtherActor->GetActorLocation();
+			CurrentLadderForwardVector = OtherActor->GetActorForwardVector();
+			CurrentLadderUpVector = OtherActor->GetActorUpVector();
 			
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Overlaping"));
 	}
 }
 
@@ -94,7 +94,6 @@ void APlayerCharacter::OverlapEndEvent(class UPrimitiveComponent* OverlappedComp
 			IsOnLadder = false;
 			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
 		}
-		UE_LOG(LogTemp, Warning, TEXT("Stopped overlaping"));
 	}
 }
 
@@ -125,18 +124,24 @@ void APlayerCharacter::Tick(float DeltaTime)
 void APlayerCharacter::MoveForward(float Value)
 {
 	if (Controller && Value != 0.f)
-	{
+	{			
+		FRotator ControllerRotation = Controller->GetControlRotation();
+		FRotator YawRotation = FRotator(0, ControllerRotation.Yaw, 0);
+
+		FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		if (IsOnLadder)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Trying to move on ladder"));
-			AddMovementInput(GetActorUpVector(), Value);
+			float delta = Camera->GetForwardVector().Z;
+			UE_LOG(LogTemp, Warning, TEXT("Direction: %f"), delta);
+			if (delta >= -0.2f)
+			{
+				AddMovementInput(GetActorUpVector() * 1, Value);
+			}
+			else AddMovementInput(GetActorUpVector() * (-1), Value);
 		}
 		else
 		{
-			FRotator ControllerRotation = Controller->GetControlRotation();
-			FRotator YawRotation = FRotator(0, ControllerRotation.Yaw, 0);
 
-			FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 			AddMovementInput(Direction, Value);
 		}
 	}
@@ -144,13 +149,19 @@ void APlayerCharacter::MoveForward(float Value)
 
 void APlayerCharacter::MoveRight(float Value)
 {
-	if (Controller && Value != 0.0f && !IsOnLadder)
+	if (Controller && Value != 0.0f )
 	{
 		FRotator ControllerRotation = Controller->GetControlRotation();
 		FRotator YawRotation = FRotator(0,ControllerRotation.Yaw, 0);
 
 		FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		AddMovementInput(Direction, Value);
+		if (IsOnLadder)
+		{
+			float a = FVector::DotProduct(CurrentLadderForwardVector,Direction);
+			FVector NewDirection = CurrentLadderForwardVector * a;
+			AddMovementInput(NewDirection, Value);
+		} 
+		else AddMovementInput(Direction, Value);
 	}
 }
 
@@ -184,7 +195,6 @@ void APlayerCharacter::Jump()
 	if (IsOnLadder)
 	{
 		FVector Distance = GetActorLocation() - CurrentLadderLocation;
-		UE_LOG(LogTemp, Error, TEXT("Direction Is: %s"), *Distance.ToString());
 		FVector Direction = FVector(Distance.X, Distance.Y, 0);
 		APlayerCharacter::LaunchCharacter(Direction.GetSafeNormal() * 1000, false, true);
 		

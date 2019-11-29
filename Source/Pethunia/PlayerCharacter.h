@@ -102,5 +102,8 @@ public:
 private:
 	bool IsOnGround();
 	void SetRegStaminaTrue();
+
 	FVector CurrentLadderLocation;
+	FVector CurrentLadderForwardVector;
+	FVector CurrentLadderUpVector;
 };
