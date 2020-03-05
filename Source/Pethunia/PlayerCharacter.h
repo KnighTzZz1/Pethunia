@@ -11,6 +11,7 @@ class UCameraComponent;
 class UStaticMeshComponent;
 class UPlayerHealthComponent;
 class UPlayerEnergyComponent;
+class UCapsuleComponent;
 
 UCLASS()
 class PETHUNIA_API APlayerCharacter : public ACharacter
@@ -19,6 +20,9 @@ class PETHUNIA_API APlayerCharacter : public ACharacter
 public:
 	APlayerCharacter();
 	// Components
+	UPROPERTY(VisibleAnywhere, blueprintReadOnly, Category = "Player")
+		UCapsuleComponent* TriggerCapsule;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 		USpringArmComponent* SpringArm;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -86,7 +90,20 @@ public:
 		bool IsRunning;
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
 		bool RegStamina;
+
+	UPROPERTY(BlueprintReadOnly, Category = "Player")
+		bool IsOnLadder;
+
+	UFUNCTION()
+		void OverlapBeginEvent(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+		void OverlapEndEvent(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
 private:
 	bool IsOnGround();
 	void SetRegStaminaTrue();
+
+	FVector CurrentLadderLocation;
+	FVector CurrentLadderForwardVector;
+	FVector CurrentLadderUpVector;
 };
