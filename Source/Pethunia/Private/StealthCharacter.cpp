@@ -6,6 +6,8 @@
 #include "TimerManager.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Curves/CurveFloat.h"
 
 AStealthCharacter::AStealthCharacter()
 {
@@ -31,6 +33,7 @@ AStealthCharacter::AStealthCharacter()
 void AStealthCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	UpdateSlidingSpeed();
 	
 }	
 
@@ -127,3 +130,36 @@ void AStealthCharacter::CrouchStop()
 	Super::UnCrouch();
 }
 
+bool AStealthCharacter::shouldUpdateAngle()
+{
+	if (GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->Velocity.Size() > 0)
+	{
+		return true;
+	}
+	return false;
+}
+	
+float AStealthCharacter::GetSlidingAngle()
+{
+	FRotator result = UKismetMathLibrary::FindLookAtRotation(LastLocation,GetActorLocation());
+	LastLocation = GetActorLocation();
+	return result.Pitch;
+}
+
+void AStealthCharacter::UpdateSlidingSpeed()
+{
+	if (shouldUpdateAngle())
+	{
+		float angle = GetSlidingAngle();
+		if (angle < 0 && angle >= -45)
+		{
+			if (SlideCurve)
+			{
+				float impulse = SlideCurve->GetFloatValue(angle);
+				FVector force = GetActorForwardVector() * impulse;
+				GetCharacterMovement()->AddImpulse(force,false);
+			}
+		}
+
+	}
+}

@@ -8,6 +8,7 @@
 
 class UCameraComponent;
 class UCharacterMovementComponent;
+class UCurveFloat;
 /**
  * 
  */
@@ -63,7 +64,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
 		float SlideBoost;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sliding")
+		UCurveFloat* SlideCurve;
 private:
+	void UpdateSlidingSpeed();
+	bool shouldUpdateAngle();
+	float GetSlidingAngle();
+	FVector LastLocation;
+
+
 
 	FTimerHandle Power1Handle;
 	FTimerHandle Power1CooldownHandle;
