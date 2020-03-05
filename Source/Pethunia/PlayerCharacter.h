@@ -39,8 +39,9 @@ public:
 	void Tick(float DeltaTime) override;
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	FTimerHandle StaminaRechargeTimer;
-protected:
 
+protected:
+	bool isSliding;
 
 	void BeginPlay() override;
 
@@ -51,12 +52,16 @@ protected:
 	void LookVertical(float value);
 
 	void Jump();
-	void CrouchStart();
-	void CrouchStop();
+
+	virtual void CrouchStart() {};
+	virtual void CrouchStop() {};
+
 	void SprintStart();
 	void SprintStop();
+
 	virtual void Power1Activate() {};
 	virtual void Power1Deactivate() {};
+
 public:	
 	// Editable Properties
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -75,17 +80,15 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0"))
 		float MaxStamina;
+	UPROPERTY(BlueprintReadOnly, Category = "Player")
+		float CurrentStamina;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0"))
 		float StaminaWaitTime;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 		float StaminaRegenMultiplier;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "50"))
-		float StaminaCostOnJump;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "5"))
 		float StaminaCostOnSprint;
 
-	UPROPERTY(BlueprintReadOnly, Category = "Player")
-		float CurrentStamina;
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
 		bool IsRunning;
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
@@ -100,7 +103,7 @@ public:
 		void OverlapEndEvent(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 private:
-	bool IsOnGround();
+
 	void SetRegStaminaTrue();
 
 	FVector CurrentLadderLocation;

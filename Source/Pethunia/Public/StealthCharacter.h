@@ -7,7 +7,7 @@
 #include "StealthCharacter.generated.h"
 
 class UCameraComponent;
-
+class UCharacterMovementComponent;
 /**
  * 
  */
@@ -20,11 +20,10 @@ public:
 	AStealthCharacter();
 	virtual void Tick(float DeltaTime);
 	
-
 	virtual void DashAbility() override;
-	UFUNCTION(BlueprintImplementableEvent)
-		void Dash();
 
+	virtual void CrouchStart() override;
+	virtual void CrouchStop() override;
 	
 	virtual void Power1Activate() override;
 	virtual void Power1Deactivate() override;
@@ -40,12 +39,37 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
 		float PowerCost;
 	
+	// Dash
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+		float DashStopTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+		float DashCooldownTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+		float DashCost;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+		float DashSpeed;
+
+	void SetDashCooldownOff();
+	void StopMovement();
+
+	// Sliding
+	float VanillaGroundFriction;
+	float VanillaDeceleration;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+		float SlideGroundFriction;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+		float SlideDeceleration;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+		float SlideBoost;
+
 private:
-	AActor* Parent;
-	UPlayerEnergyComponent* energyComp;
+
 	FTimerHandle Power1Handle;
 	FTimerHandle Power1CooldownHandle;
 	bool bPower1IsOnCooldown;
 	void PowerCooldownOff();
 
+	bool DashIsOnCooldown;
+	FTimerHandle DashHandle;
 };

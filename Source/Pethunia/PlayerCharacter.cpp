@@ -48,24 +48,26 @@ APlayerCharacter::APlayerCharacter()
 
 	TurnRate = 30.f;
 	PitchRate = 30.f;
-	JumpHeight = 500.f;
-	NormalSpeed = 600.f;
-	MaxStamina = 500.f;
+	JumpHeight = 700;
+	NormalSpeed = 500;
+	MaxStamina = 500;
 	CurrentStamina = MaxStamina;
 	IsRunning = false;
 	RegStamina = false;
+
 	IsOnLadder = false;
+
 	CrouchSpeedMultiplier = 0.5f;
-	StaminaCostOnJump = 100.f;
 	StaminaWaitTime = 2.f;
-	StaminaRegenMultiplier = 1.f;
-	StaminaCostOnSprint = 0.5f;
-	SprintSpeedMultiplier = 1.8f;
+	StaminaRegenMultiplier = 0.5f;
+	StaminaCostOnSprint = 0.25f;
+	SprintSpeedMultiplier = 1.6f;
 	
 
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCharacterMovement()->MaxWalkSpeedCrouched = NormalSpeed * CrouchSpeedMultiplier;
+	
 }
 
 
@@ -80,7 +82,6 @@ void APlayerCharacter::OverlapBeginEvent(class UPrimitiveComponent* OverlappedCo
 			CurrentLadderLocation = OtherActor->GetActorLocation();
 			CurrentLadderForwardVector = OtherActor->GetActorForwardVector();
 			CurrentLadderUpVector = OtherActor->GetActorUpVector();
-			
 		}
 	}
 }
@@ -101,6 +102,7 @@ void APlayerCharacter::OverlapEndEvent(class UPrimitiveComponent* OverlappedComp
 void APlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	IsOnLadder = false;
 }
 
 void APlayerCharacter::Tick(float DeltaTime)
@@ -124,25 +126,27 @@ void APlayerCharacter::Tick(float DeltaTime)
 void APlayerCharacter::MoveForward(float Value)
 {
 	if (Controller && Value != 0.f)
-	{			
-		FRotator ControllerRotation = Controller->GetControlRotation();
-		FRotator YawRotation = FRotator(0, ControllerRotation.Yaw, 0);
-
-		FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		if (IsOnLadder)
+	{	
+		if (!isSliding)
 		{
-			float delta = Camera->GetForwardVector().Z;
-			UE_LOG(LogTemp, Warning, TEXT("Direction: %f"), delta);
-			if (delta >= -0.2f)
+			FRotator ControllerRotation = Controller->GetControlRotation();
+			FRotator YawRotation = FRotator(0, ControllerRotation.Yaw, 0);
+
+			FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+			if (IsOnLadder)
 			{
-				AddMovementInput(GetActorUpVector() * 1, Value);
+				float delta = Camera->GetForwardVector().Z;
+				UE_LOG(LogTemp, Warning, TEXT("Direction: %f"), delta);
+				if (delta >= -0.2f)
+				{
+					AddMovementInput(GetActorUpVector() * 1, Value);
+				}
+				else AddMovementInput(GetActorUpVector() * (-1), Value);
 			}
-			else AddMovementInput(GetActorUpVector() * (-1), Value);
-		}
-		else
-		{
-
-			AddMovementInput(Direction, Value);
+			else
+			{
+				AddMovementInput(Direction, Value);
+			}
 		}
 	}
 }
@@ -151,17 +155,20 @@ void APlayerCharacter::MoveRight(float Value)
 {
 	if (Controller && Value != 0.0f )
 	{
-		FRotator ControllerRotation = Controller->GetControlRotation();
-		FRotator YawRotation = FRotator(0,ControllerRotation.Yaw, 0);
-
-		FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-		if (IsOnLadder)
+		if (!isSliding)
 		{
-			float a = FVector::DotProduct(CurrentLadderForwardVector,Direction);
-			FVector NewDirection = CurrentLadderForwardVector * a;
-			AddMovementInput(NewDirection, Value);
-		} 
-		else AddMovementInput(Direction, Value);
+			FRotator ControllerRotation = Controller->GetControlRotation();
+			FRotator YawRotation = FRotator(0, ControllerRotation.Yaw, 0);
+
+			FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+			if (IsOnLadder)
+			{
+				float a = FVector::DotProduct(CurrentLadderForwardVector, Direction);
+				FVector NewDirection = CurrentLadderForwardVector * a;
+				AddMovementInput(NewDirection, Value);
+			}
+			else AddMovementInput(Direction, Value);
+		}
 	}
 }
 
@@ -175,20 +182,6 @@ void APlayerCharacter::LookVertical(float Value)
 	AddControllerPitchInput(Value * PitchRate * GetWorld()->GetDeltaSeconds());
 }
 
-bool APlayerCharacter::IsOnGround()
-{
-	FVector ViewPointLocation;
-	FRotator ViewPointRotation;
-	FHitResult Hit;
-	FCollisionQueryParams TraceParams;
-	
-	GetController()->GetPlayerViewPoint(ViewPointLocation, ViewPointRotation);
-	FVector StartPosition = ViewPointLocation + FVector(0.f, 0.f, -88.f);
-	FVector EndPosition = StartPosition + FVector(0.0f, 0.0f, -160.f);
-	
-	bool isHit = GetWorld()->LineTraceSingleByChannel(Hit, StartPosition, EndPosition, ECC_Visibility, TraceParams);
-	return isHit;
-}
 
 void APlayerCharacter::Jump()
 {
@@ -197,25 +190,11 @@ void APlayerCharacter::Jump()
 		FVector Distance = GetActorLocation() - CurrentLadderLocation;
 		FVector Direction = FVector(Distance.X, Distance.Y, 0);
 		APlayerCharacter::LaunchCharacter(Direction.GetSafeNormal() * 1000, false, true);
-		
 	}
-	else if (IsOnGround() && CurrentStamina > StaminaCostOnJump)
+	else if (GetCharacterMovement()->IsMovingOnGround())
 	{
-		RegStamina = false;
-		CurrentStamina -= StaminaCostOnJump;
 		APlayerCharacter::LaunchCharacter(FVector(0.f, 0.f, JumpHeight), false, true);
-		GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::SetRegStaminaTrue, StaminaWaitTime, false);
 	}
-}
-
-void APlayerCharacter::CrouchStart()
-{
-	Super::Crouch();
-}
-
-void APlayerCharacter::CrouchStop()
-{
-	Super::UnCrouch();
 }
 
 void APlayerCharacter::SetRegStaminaTrue()
