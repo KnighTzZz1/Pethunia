@@ -113,12 +113,12 @@ void APlayerCharacter::Tick(float DeltaTime)
 		CurrentStamina += StaminaRegenMultiplier;
 		if (CurrentStamina == MaxStamina) RegStamina = false;
 	}
-	if (!RegStamina && IsRunning && CurrentStamina > 0 )
+	if (!RegStamina && IsRunning && CurrentStamina > 0 && GetCharacterMovement()->IsMovingOnGround() && GetCharacterMovement()->Velocity.Size() != 0)
 	{
 		CurrentStamina -= StaminaCostOnSprint;
-		if (CurrentStamina <= 0)
+		if (CurrentStamina <= 0.5)
 		{
-			SprintStop();
+			GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 		}
 	}
 }
@@ -204,6 +204,8 @@ void APlayerCharacter::SetRegStaminaTrue()
 
 void APlayerCharacter::SprintStart()
 {
+	if (CurrentStamina <= 0) return;
+	GetWorldTimerManager().ClearTimer(StaminaRechargeTimer);
 	IsRunning = true;
 	RegStamina = false;
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed * SprintSpeedMultiplier;

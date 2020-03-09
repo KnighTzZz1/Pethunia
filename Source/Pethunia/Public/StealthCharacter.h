@@ -67,6 +67,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sliding")
 		UCurveFloat* SlideCurve;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sliding")
+		float SlideDelay;
 private:
 	void UpdateSlidingSpeed();
 	bool shouldUpdateAngle();
@@ -82,4 +84,8 @@ private:
 
 	bool DashIsOnCooldown;
 	FTimerHandle DashHandle;
+
+	bool SlideIsOnCooldown;
+	FTimerHandle SlideHandle;
+	void SlideCooldownOff();
 };

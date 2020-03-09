@@ -28,6 +28,7 @@ AStealthCharacter::AStealthCharacter()
 	SlideDeceleration = 0;
 	SlideGroundFriction = 0.5f;
 	SlideBoost = 100.f;
+	SlideDelay = 0.3f;
 }
 
 void AStealthCharacter::Tick(float DeltaTime)
@@ -99,7 +100,7 @@ void AStealthCharacter::PowerCooldownOff()
 
 void AStealthCharacter::CrouchStart()
 {
-	if (IsRunning)
+	if (IsRunning && !SlideIsOnCooldown)
 	{
 		FVector velocity = GetCharacterMovement()->Velocity;
 		float res = velocity.Size();
@@ -124,6 +125,11 @@ void AStealthCharacter::CrouchStart()
 
 void AStealthCharacter::CrouchStop()
 {
+	if (GetCharacterMovement()->IsMovingOnGround())
+	{
+		SlideIsOnCooldown = true;
+		GetWorldTimerManager().SetTimer(SlideHandle, this, &AStealthCharacter::SlideCooldownOff, SlideDelay, false);
+	}
 	isSliding = false;
 	GetCharacterMovement()->GroundFriction = VanillaGroundFriction;
 	GetCharacterMovement()->BrakingDecelerationWalking = VanillaDeceleration;
@@ -162,4 +168,9 @@ void AStealthCharacter::UpdateSlidingSpeed()
 		}
 
 	}
+}
+
+void AStealthCharacter::SlideCooldownOff()
+{
+	SlideIsOnCooldown = false;
 }
