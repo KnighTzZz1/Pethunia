@@ -8,6 +8,12 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Curves/CurveFloat.h"
+#include "DrawDebugHelpers.h"
+#include "Gun.h"
+#include "EngineGlobals.h"
+#include "Components/StaticMeshComponent.h"
+
+#define print(text) if(GEngine) GEngine->AddOnScreenDebugMessage(-1,1.5f,FColor::Green, TEXT(text));
 
 AStealthCharacter::AStealthCharacter()
 {
@@ -29,6 +35,11 @@ AStealthCharacter::AStealthCharacter()
 	SlideGroundFriction = 0.5f;
 	SlideBoost = 100.f;
 	SlideDelay = 0.3f;
+
+
+	ActiveWeapon = nullptr;
+	isReloading = false;
+	
 }
 
 void AStealthCharacter::Tick(float DeltaTime)
@@ -173,4 +184,76 @@ void AStealthCharacter::UpdateSlidingSpeed()
 void AStealthCharacter::SlideCooldownOff()
 {
 	SlideIsOnCooldown = false;
+}
+
+void AStealthCharacter::Interact(AActor* ActorToInteract)
+{
+	if (ActorToInteract->ActorHasTag(FName(TEXT("Weapon"))))
+	{
+		if (WeaponInventory.Num() == 0)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("WeaponInventory is Empty"));
+			ActiveWeapon = (AGun*)ActorToInteract;
+			
+		}
+		WeaponInventory.Add((AGun*)ActorToInteract);
+		ActorToInteract->SetActorHiddenInGame(true);
+		ActorToInteract->SetActorTickEnabled(false);
+		ActorToInteract->SetActorEnableCollision(false);
+		UStaticMeshComponent* act = (UStaticMeshComponent*)ActorToInteract->GetRootComponent();
+		act->SetSimulatePhysics(false);
+	}
+}
+
+void AStealthCharacter::AddWeaponToInventory(AGun* weapon)
+{
+	WeaponInventory.Add(weapon);
+}
+
+void AStealthCharacter::LMB()
+{
+	if (!ActiveWeapon) return;
+	if (isReloading) return;
+	if (ActiveWeapon->CurrentAmmo > 0)
+	{
+		FHitResult Hit;
+		FVector Start = Camera->GetComponentLocation();
+		FVector End = Start + Camera->GetForwardVector() * ActiveWeapon->ShootDistance;
+		bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_Visibility);
+		if (hasHit)
+		{
+			DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Green, false, 2, false);
+		}
+		ActiveWeapon->CurrentAmmo--;
+	}
+}
+
+void AStealthCharacter::Reload()
+{
+	if (!ActiveWeapon) return;
+	if (ActiveWeapon->CurrentAmmo == ActiveWeapon->MaxAmmo || ActiveWeapon->NumberOfMagazines == 0) return;
+	isReloading = true;
+	GetWorldTimerManager().SetTimer(ReloadTime, this, &AStealthCharacter::ReloadWeapon, ActiveWeapon->ReloadTime);
+}
+
+void AStealthCharacter::ReloadWeapon()
+{
+	ActiveWeapon->CurrentAmmo = ActiveWeapon->MaxAmmo;
+	ActiveWeapon->NumberOfMagazines--;
+	isReloading = false;
+}
+
+void AStealthCharacter::DropWeapon()
+{
+	if (!ActiveWeapon) return; // If I don't have anything equiped, then I can't drop anything.
+	int index = WeaponInventory.IndexOfByKey(ActiveWeapon); // Get the index in inventory.
+	UE_LOG(LogTemp, Warning, TEXT("Index: %d"), index);
+	WeaponInventory.RemoveAt(index);
+	ActiveWeapon->SetActorLocation(GetActorLocation());
+	ActiveWeapon->SetActorHiddenInGame(false);
+	ActiveWeapon->SetActorEnableCollision(true);
+	ActiveWeapon->SetActorTickEnabled(true);
+	UStaticMeshComponent* act = (UStaticMeshComponent*)ActiveWeapon->GetRootComponent();
+	act->SetSimulatePhysics(true);
+	ActiveWeapon = nullptr;
 }

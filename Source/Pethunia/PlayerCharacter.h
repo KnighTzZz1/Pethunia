@@ -62,6 +62,14 @@ protected:
 	virtual void Power1Activate() {};
 	virtual void Power1Deactivate() {};
 
+	virtual void Interact(AActor* ActorToInteract) {};
+	virtual void LMB() {};
+	virtual void Reload() {};
+	virtual void DropWeapon() {};
+
+	UFUNCTION()
+		void TryToInteract();
+
 public:	
 	// Editable Properties
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Camera")
@@ -102,6 +110,9 @@ public:
 	UFUNCTION()
 		void OverlapEndEvent(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+
+	UPROPERTY(EditAnywhere, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "500.0"))
+		float InteractionDistance;
 private:
 
 	void SetRegStaminaTrue();

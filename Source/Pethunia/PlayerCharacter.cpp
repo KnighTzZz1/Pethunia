@@ -15,7 +15,7 @@
 #include "PlayerEnergyComponent.h"
 #include "Components/CapsuleComponent.h"
 
-#define printout(x) if(GEngine){GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, TEXT(x));}
+
 
 
 APlayerCharacter::APlayerCharacter()
@@ -219,6 +219,24 @@ void APlayerCharacter::SprintStop()
 }
 
 
+void APlayerCharacter::TryToInteract()
+{
+	FHitResult Hit;
+	FVector Start = Camera->GetComponentLocation();
+	FVector End = Start + Camera->GetForwardVector() * InteractionDistance;
+	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End,ECollisionChannel::ECC_Visibility);
+	if (hasHit)
+	{
+		AActor* HitActor = Hit.GetActor();
+		Interact(HitActor);		
+		DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Green, false, 2, false);
+	} 
+	else
+	{
+		DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2, false);
+	}
+}
+
 // Called to bind functionality to input
 void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -231,7 +249,10 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &APlayerCharacter::SprintStop);
 	PlayerInputComponent->BindAction("Ability", IE_Pressed, this, &APlayerCharacter::DashAbility);
 	PlayerInputComponent->BindAction("Power 1", IE_Pressed, this, &APlayerCharacter::Power1Activate);
-
+	PlayerInputComponent->BindAction("Interaction", IE_Pressed, this, &APlayerCharacter::TryToInteract);
+	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &APlayerCharacter::LMB);
+	PlayerInputComponent->BindAction("Reload",IE_Pressed,this,&APlayerCharacter::Reload);
+	PlayerInputComponent->BindAction("DropWeapon", IE_Pressed, this, &APlayerCharacter::DropWeapon);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &APlayerCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &APlayerCharacter::MoveRight);

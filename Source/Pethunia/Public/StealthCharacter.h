@@ -9,6 +9,7 @@
 class UCameraComponent;
 class UCharacterMovementComponent;
 class UCurveFloat;
+class AGun;
 /**
  * 
  */
@@ -28,6 +29,12 @@ public:
 	
 	virtual void Power1Activate() override;
 	virtual void Power1Deactivate() override;
+
+	virtual void Interact(AActor* ActorToInteract) override;
+
+	virtual void LMB() override;
+	virtual void Reload() override;
+	virtual void DropWeapon() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "1.0", ClampMax = "2.0"))
 		float IncreasedEnergyMultiplier;
@@ -63,29 +70,43 @@ public:
 		float SlideDeceleration;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
 		float SlideBoost;
-
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sliding")
-		UCurveFloat* SlideCurve;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sliding")
 		float SlideDelay;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sliding")
+		UCurveFloat* SlideCurve;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+		TArray<AActor*> WeaponInventory;
+
+
+	UFUNCTION()
+		void AddWeaponToInventory(AGun* weapon);
+
 private:
-	void UpdateSlidingSpeed();
-	bool shouldUpdateAngle();
-	float GetSlidingAngle();
+
 	FVector LastLocation;
 
-
-
+	// Power
 	FTimerHandle Power1Handle;
 	FTimerHandle Power1CooldownHandle;
 	bool bPower1IsOnCooldown;
 	void PowerCooldownOff();
 
+	// Dashing
 	bool DashIsOnCooldown;
 	FTimerHandle DashHandle;
 
+	// Sliding
+	void UpdateSlidingSpeed();
+	bool shouldUpdateAngle();
+	float GetSlidingAngle();
 	bool SlideIsOnCooldown;
 	FTimerHandle SlideHandle;
 	void SlideCooldownOff();
+
+	// Guns
+	AGun* ActiveWeapon;
+	FTimerHandle ReloadTime;
+	void ReloadWeapon();
+	bool isReloading;
 };
