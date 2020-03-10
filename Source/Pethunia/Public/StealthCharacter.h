@@ -22,6 +22,8 @@ public:
 	AStealthCharacter();
 	virtual void Tick(float DeltaTime);
 	
+	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
 	virtual void DashAbility() override;
 
 	virtual void CrouchStart() override;
@@ -35,6 +37,8 @@ public:
 	virtual void LMB() override;
 	virtual void Reload() override;
 	virtual void DropWeapon() override;
+
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "1.0", ClampMax = "2.0"))
 		float IncreasedEnergyMultiplier;
@@ -77,10 +81,15 @@ public:
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
 		TArray<AActor*> WeaponInventory;
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapons")
+		TMap<int,AGun*> inv;
 
 	UFUNCTION()
 		void AddWeaponToInventory(AGun* weapon);
+	UFUNCTION()
+		void EquipPrimary();
+	UFUNCTION()
+		void EquipSecondary();
 
 private:
 

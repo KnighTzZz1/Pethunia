@@ -6,8 +6,9 @@
 #include "GameFramework/Actor.h"
 #include "Gun.generated.h"
 
-class UStaticMeshComponent;
+class USkeletalMeshComponent;
 class UBoxComponent;
+class USceneComponent;
 
 UCLASS()
 class PETHUNIA_API AGun : public AActor
@@ -18,8 +19,10 @@ public:
 	// Sets default values for this actor's properties
 	AGun();
 
+	UPROPERTY()
+		USceneComponent* Root;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Base")
-		UStaticMeshComponent* GunMesh;
+		USkeletalMeshComponent* GunMesh;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Base")
 		UBoxComponent* GunCollission;
 

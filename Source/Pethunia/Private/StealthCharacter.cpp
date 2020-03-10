@@ -12,8 +12,11 @@
 #include "Gun.h"
 #include "EngineGlobals.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Components/InputComponent.h"
 
 #define print(text) if(GEngine) GEngine->AddOnScreenDebugMessage(-1,1.5f,FColor::Green, TEXT(text));
+#define printVector(vector) UE_LOG(LogTemp,Warning,TEXT("Vector: %s"),*vector.ToString());
 
 AStealthCharacter::AStealthCharacter()
 {
@@ -36,6 +39,8 @@ AStealthCharacter::AStealthCharacter()
 	SlideBoost = 100.f;
 	SlideDelay = 0.3f;
 
+	inv.Add(1, nullptr);
+	inv.Add(2, nullptr);
 
 	ActiveWeapon = nullptr;
 	isReloading = false;
@@ -190,18 +195,30 @@ void AStealthCharacter::Interact(AActor* ActorToInteract)
 {
 	if (ActorToInteract->ActorHasTag(FName(TEXT("Weapon"))))
 	{
-		if (WeaponInventory.Num() == 0)
+	
+		if (*inv.Find(1) == nullptr && *inv.Find(2) == nullptr)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("WeaponInventory is Empty"));
+			inv.Add(1, (AGun*)ActorToInteract);
 			ActiveWeapon = (AGun*)ActorToInteract;
-			
 		}
-		WeaponInventory.Add((AGun*)ActorToInteract);
+		else if (*inv.Find(1) == nullptr)
+		{
+			inv.Add(1, (AGun*)ActorToInteract);
+		}
+		else if(*inv.Find(2) == nullptr)
+		{
+			inv.Add(2, (AGun*)ActorToInteract);
+		}
+		else
+		{
+			return;
+		}
+
 		ActorToInteract->SetActorHiddenInGame(true);
 		ActorToInteract->SetActorTickEnabled(false);
 		ActorToInteract->SetActorEnableCollision(false);
-		UStaticMeshComponent* act = (UStaticMeshComponent*)ActorToInteract->GetRootComponent();
-		act->SetSimulatePhysics(false);
+		
+
 	}
 }
 
@@ -246,14 +263,41 @@ void AStealthCharacter::ReloadWeapon()
 void AStealthCharacter::DropWeapon()
 {
 	if (!ActiveWeapon) return; // If I don't have anything equiped, then I can't drop anything.
-	int index = WeaponInventory.IndexOfByKey(ActiveWeapon); // Get the index in inventory.
-	UE_LOG(LogTemp, Warning, TEXT("Index: %d"), index);
-	WeaponInventory.RemoveAt(index);
-	ActiveWeapon->SetActorLocation(GetActorLocation());
+
+	if (*inv.Find(1) == ActiveWeapon)
+	{
+		inv.Add(1, nullptr);
+	}
+	else
+	{
+		inv.Add(2, nullptr);
+	}
+
+	ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
+
 	ActiveWeapon->SetActorHiddenInGame(false);
 	ActiveWeapon->SetActorEnableCollision(true);
 	ActiveWeapon->SetActorTickEnabled(true);
-	UStaticMeshComponent* act = (UStaticMeshComponent*)ActiveWeapon->GetRootComponent();
-	act->SetSimulatePhysics(true);
-	ActiveWeapon = nullptr;
+		
+
+	ActiveWeapon = nullptr; // Unequipe the gun
+}
+
+void AStealthCharacter::EquipPrimary()
+{
+	ActiveWeapon = *inv.Find(1);
+	if (!ActiveWeapon) print("No primary weapon");
+}
+
+void AStealthCharacter::EquipSecondary()
+{
+	ActiveWeapon = *inv.Find(2);
+	if (!ActiveWeapon) print("No secondary weapon");
+}
+void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	PlayerInputComponent->BindAction("EquipWeapon1",IE_Pressed, this, &AStealthCharacter::EquipPrimary);
+	PlayerInputComponent->BindAction("EquipWeapon2", IE_Pressed, this, &AStealthCharacter::EquipSecondary);
 }

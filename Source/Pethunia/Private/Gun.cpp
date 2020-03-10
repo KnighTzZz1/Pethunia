@@ -2,8 +2,9 @@
 
 
 #include "Gun.h"
-#include "Components/StaticMeshComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/SceneComponent.h"
 
 // Sets default values
 AGun::AGun()
@@ -11,12 +12,14 @@ AGun::AGun()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+
 	GunCollission = CreateDefaultSubobject<UBoxComponent>(TEXT("Gun Collision"));
 	GunCollission->InitBoxExtent(FVector(30, 30, 30));
 
-	GunMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Gun Mesh"));
+	GunMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Gun Mesh"));
 	GunMesh->SetRelativeLocation(FVector(0, 0, 0));
-	GunMesh->SetupAttachment(RootComponent);
+	GunMesh->SetupAttachment(Root);
 	GunCollission->SetupAttachment(GunMesh);
 }
 
