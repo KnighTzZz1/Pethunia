@@ -15,6 +15,9 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/InputComponent.h"
 
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
+
 #define print(text) if(GEngine) GEngine->AddOnScreenDebugMessage(-1,1.5f,FColor::Green, TEXT(text));
 #define printVector(vector) UE_LOG(LogTemp,Warning,TEXT("Vector: %s"),*vector.ToString());
 
@@ -45,6 +48,12 @@ AStealthCharacter::AStealthCharacter()
 	ActiveWeapon = nullptr;
 	isReloading = false;
 	
+	Arms = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Player Arms"));
+	PlayerWeapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Player Weapon"));
+	Arms->SetupAttachment(Camera);
+	//PlayerWeapon->SetupAttachment(Arms);
+	
+	PlayerWeapon->AttachToComponent(Arms, FAttachmentTransformRules(EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative,true), FName(TEXT("R_GunSocket")));
 }
 
 void AStealthCharacter::Tick(float DeltaTime)
@@ -200,6 +209,7 @@ void AStealthCharacter::Interact(AActor* ActorToInteract)
 		{
 			inv.Add(1, (AGun*)ActorToInteract);
 			ActiveWeapon = (AGun*)ActorToInteract;
+			SetupAnims();
 		}
 		else if (*inv.Find(1) == nullptr)
 		{
@@ -222,10 +232,6 @@ void AStealthCharacter::Interact(AActor* ActorToInteract)
 	}
 }
 
-void AStealthCharacter::AddWeaponToInventory(AGun* weapon)
-{
-	WeaponInventory.Add(weapon);
-}
 
 void AStealthCharacter::LMB()
 {
@@ -242,14 +248,30 @@ void AStealthCharacter::LMB()
 			DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Green, false, 2, false);
 		}
 		ActiveWeapon->CurrentAmmo--;
+		if (ActiveWeapon->ArmsFire01Animation == nullptr || ActiveWeapon->ArmsFire02Animation == nullptr || ActiveWeapon->WeaponFire01Animation == nullptr || ActiveWeapon->WeaponFire02Animation == nullptr) return;
+		if (FMath::RandRange(1, 2) == 1)
+		{
+			PlayerWeapon->GetAnimInstance()->Montage_Play(ActiveWeapon->WeaponFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+			Arms->GetAnimInstance()->Montage_Play(ActiveWeapon->ArmsFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+		}
+		else
+		{
+			PlayerWeapon->GetAnimInstance()->Montage_Play(ActiveWeapon->WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+			Arms->GetAnimInstance()->Montage_Play(ActiveWeapon->ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+		}
 	}
 }
 
 void AStealthCharacter::Reload()
 {
-	if (!ActiveWeapon) return;
+	if (!ActiveWeapon || isReloading) return;
 	if (ActiveWeapon->CurrentAmmo == ActiveWeapon->MaxAmmo || ActiveWeapon->NumberOfMagazines == 0) return;
 	isReloading = true;
+	if (ActiveWeapon->ArmsReloadAnimation != nullptr && ActiveWeapon->WeaponReloadAnimation != nullptr)
+	{
+		PlayerWeapon->GetAnimInstance()->Montage_Play(ActiveWeapon->WeaponReloadAnimation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+		Arms->GetAnimInstance()->Montage_Play(ActiveWeapon->ArmsReloadAnimation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+	}
 	GetWorldTimerManager().SetTimer(ReloadTime, this, &AStealthCharacter::ReloadWeapon, ActiveWeapon->ReloadTime);
 }
 
@@ -267,10 +289,12 @@ void AStealthCharacter::DropWeapon()
 	if (*inv.Find(1) == ActiveWeapon)
 	{
 		inv.Add(1, nullptr);
+		ClearAnims();
 	}
 	else
 	{
 		inv.Add(2, nullptr);
+		ClearAnims();
 	}
 
 	ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
@@ -286,13 +310,17 @@ void AStealthCharacter::DropWeapon()
 void AStealthCharacter::EquipPrimary()
 {
 	ActiveWeapon = *inv.Find(1);
+	UE_LOG(LogTemp, Warning, TEXT("Weapon 1"));
 	if (!ActiveWeapon) print("No primary weapon");
+	
 }
 
 void AStealthCharacter::EquipSecondary()
 {
 	ActiveWeapon = *inv.Find(2);
+	UE_LOG(LogTemp, Warning, TEXT("Weapon 2"));
 	if (!ActiveWeapon) print("No secondary weapon");
+	
 }
 void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {

@@ -10,6 +10,7 @@ class UCameraComponent;
 class UCharacterMovementComponent;
 class UCurveFloat;
 class AGun;
+class USkeletalMeshComponent;
 /**
  * 
  */
@@ -18,6 +19,11 @@ class PETHUNIA_API AStealthCharacter : public APlayerCharacter
 {
 	GENERATED_BODY()
 	
+public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Models")
+		USkeletalMeshComponent* Arms;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Models")
+		USkeletalMeshComponent* PlayerWeapon;
 public:
 	AStealthCharacter();
 	virtual void Tick(float DeltaTime);
@@ -79,18 +85,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sliding")
 		UCurveFloat* SlideCurve;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
-		TArray<AActor*> WeaponInventory;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapons")
 		TMap<int,AGun*> inv;
 
-	UFUNCTION()
-		void AddWeaponToInventory(AGun* weapon);
+
 	UFUNCTION()
 		void EquipPrimary();
 	UFUNCTION()
 		void EquipSecondary();
 
+	UFUNCTION(BlueprintImplementableEvent)
+		void SetupAnims();
+	UFUNCTION(BlueprintImplementableEvent)
+		void ClearAnims();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapons")
+		bool isReloading;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapons")
+		AGun* ActiveWeapon;
 private:
 
 	FVector LastLocation;
@@ -114,8 +128,8 @@ private:
 	void SlideCooldownOff();
 
 	// Guns
-	AGun* ActiveWeapon;
+	
 	FTimerHandle ReloadTime;
 	void ReloadWeapon();
-	bool isReloading;
+	
 };

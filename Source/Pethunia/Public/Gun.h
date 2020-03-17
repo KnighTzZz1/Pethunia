@@ -9,6 +9,7 @@
 class USkeletalMeshComponent;
 class UBoxComponent;
 class USceneComponent;
+class UAnimMontage;
 
 UCLASS()
 class PETHUNIA_API AGun : public AActor
@@ -47,4 +48,19 @@ public:
 		float ReloadTime;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
 		FName GunName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
+		UAnimMontage* ArmsReloadAnimation;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
+		UAnimMontage* WeaponReloadAnimation;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
+		UAnimMontage* ArmsFire01Animation;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
+		UAnimMontage* WeaponFire01Animation;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
+		UAnimMontage* ArmsFire02Animation;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
+		UAnimMontage* WeaponFire02Animation;
+
+
 };

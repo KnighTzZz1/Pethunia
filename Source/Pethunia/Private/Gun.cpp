@@ -5,6 +5,8 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/SceneComponent.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimMontage.h"
 
 // Sets default values
 AGun::AGun()
@@ -21,6 +23,7 @@ AGun::AGun()
 	GunMesh->SetRelativeLocation(FVector(0, 0, 0));
 	GunMesh->SetupAttachment(Root);
 	GunCollission->SetupAttachment(GunMesh);
+	
 }
 
 // Called when the game starts or when spawned
