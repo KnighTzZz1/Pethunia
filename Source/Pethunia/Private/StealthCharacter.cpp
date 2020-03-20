@@ -51,9 +51,10 @@ AStealthCharacter::AStealthCharacter()
 	Arms = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Player Arms"));
 	PlayerWeapon = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Player Weapon"));
 	Arms->SetupAttachment(Camera);
-	//PlayerWeapon->SetupAttachment(Arms);
 	
-	PlayerWeapon->AttachToComponent(Arms, FAttachmentTransformRules(EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative,true), FName(TEXT("R_GunSocket")));
+	//PlayerWeapon->AttachToComponent(Arms, FAttachmentTransformRules(EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative, EAttachmentRule::KeepRelative,true), FName(TEXT("R_GunSocket")));
+
+	CanShoot = true;
 }
 
 void AStealthCharacter::Tick(float DeltaTime)
@@ -237,28 +238,78 @@ void AStealthCharacter::LMB()
 {
 	if (!ActiveWeapon) return;
 	if (isReloading) return;
-	if (ActiveWeapon->CurrentAmmo > 0)
+
+	if (!CanShoot) return;
+
+	FHitResult Hit;
+	FVector Start = Camera->GetComponentLocation();
+	FVector End = Start + Camera->GetForwardVector() * ActiveWeapon->ShootDistance;
+	ActiveWeapon->Clicked = true;
+
+	if (ActiveWeapon->WeaponFireMode == FireMode::MODE_Single)
 	{
-		FHitResult Hit;
-		FVector Start = Camera->GetComponentLocation();
-		FVector End = Start + Camera->GetForwardVector() * ActiveWeapon->ShootDistance;
-		bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_Visibility);
-		if (hasHit)
-		{
-			DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Green, false, 2, false);
-		}
-		ActiveWeapon->CurrentAmmo--;
-		if (ActiveWeapon->ArmsFire01Animation == nullptr || ActiveWeapon->ArmsFire02Animation == nullptr || ActiveWeapon->WeaponFire01Animation == nullptr || ActiveWeapon->WeaponFire02Animation == nullptr) return;
-		if (FMath::RandRange(1, 2) == 1)
-		{
-			PlayerWeapon->GetAnimInstance()->Montage_Play(ActiveWeapon->WeaponFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-			Arms->GetAnimInstance()->Montage_Play(ActiveWeapon->ArmsFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-		}
-		else
-		{
-			PlayerWeapon->GetAnimInstance()->Montage_Play(ActiveWeapon->WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-			Arms->GetAnimInstance()->Montage_Play(ActiveWeapon->ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-		}
+		CanShoot = false;
+		ActiveWeapon->FireWeaponSingle(&Hit, Start, End, PlayerWeapon, Arms);
+		FTimerHandle ShootCooldown;
+		GetWorldTimerManager().SetTimer(ShootCooldown, this, &AStealthCharacter::ChangeShoot, ActiveWeapon->FireDelay);
+		
+	}
+	else if (ActiveWeapon->WeaponFireMode == FireMode::MODE_Auto)
+	{
+		CanShoot = false;
+		FireWeaponOnAuto(&Hit,Start,End);
+		
+	}
+
+}
+
+
+
+void AStealthCharacter::FireWeaponOnAuto(FHitResult *Hit, FVector Start, FVector End)
+{
+	if (ActiveWeapon->Clicked == false)
+	{
+		FTimerHandle ShootCooldown;
+		GetWorldTimerManager().SetTimer(ShootCooldown, this, &AStealthCharacter::ChangeShoot, ActiveWeapon->FireDelay);
+		return;
+	}
+
+	Start = Camera->GetComponentLocation();
+	End = Start + Camera->GetForwardVector() * ActiveWeapon->ShootDistance;
+
+	ActiveWeapon->FireWeaponAuto(Hit, Start, End, PlayerWeapon, Arms);
+
+	FTimerHandle ShootHandle;
+	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AStealthCharacter::FireWeaponOnAuto, Hit, Start, End);
+	
+	GetWorldTimerManager().SetTimer(ShootHandle, ShootDelegate, ActiveWeapon->RateOfFire, false);
+}
+
+void AStealthCharacter::ChangeFireMode()
+{
+	if (!ActiveWeapon) return;
+	if (isReloading) return;
+
+	if (ActiveWeapon->WeaponFireMode == FireMode::MODE_Auto)
+	{
+		ActiveWeapon->WeaponFireMode = FireMode::MODE_Single;
+	}
+	else if (ActiveWeapon->WeaponFireMode == FireMode::MODE_Single)
+	{
+		ActiveWeapon->WeaponFireMode = FireMode::MODE_Auto;
+	}
+}
+
+void AStealthCharacter::ChangeShoot()
+{
+	CanShoot = true;
+}
+
+void AStealthCharacter::LMB_Released()
+{
+	if (ActiveWeapon != nullptr)
+	{
+		ActiveWeapon->Clicked = false;
 	}
 }
 
@@ -267,6 +318,7 @@ void AStealthCharacter::Reload()
 	if (!ActiveWeapon || isReloading) return;
 	if (ActiveWeapon->CurrentAmmo == ActiveWeapon->MaxAmmo || ActiveWeapon->NumberOfMagazines == 0) return;
 	isReloading = true;
+	ActiveWeapon->Clicked = false;
 	if (ActiveWeapon->ArmsReloadAnimation != nullptr && ActiveWeapon->WeaponReloadAnimation != nullptr)
 	{
 		PlayerWeapon->GetAnimInstance()->Montage_Play(ActiveWeapon->WeaponReloadAnimation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
@@ -309,17 +361,25 @@ void AStealthCharacter::DropWeapon()
 
 void AStealthCharacter::EquipPrimary()
 {
+	if (*inv.Find(1) == nullptr)
+	{
+		print("No primary weapon");
+		return;
+	}
 	ActiveWeapon = *inv.Find(1);
 	UE_LOG(LogTemp, Warning, TEXT("Weapon 1"));
-	if (!ActiveWeapon) print("No primary weapon");
-	
 }
 
 void AStealthCharacter::EquipSecondary()
 {
+	if (*inv.Find(2) == nullptr)
+	{
+		print("No secondary weapon");
+		return;
+	}
 	ActiveWeapon = *inv.Find(2);
 	UE_LOG(LogTemp, Warning, TEXT("Weapon 2"));
-	if (!ActiveWeapon) print("No secondary weapon");
+
 	
 }
 void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
@@ -328,4 +388,6 @@ void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 
 	PlayerInputComponent->BindAction("EquipWeapon1",IE_Pressed, this, &AStealthCharacter::EquipPrimary);
 	PlayerInputComponent->BindAction("EquipWeapon2", IE_Pressed, this, &AStealthCharacter::EquipSecondary);
+	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AStealthCharacter::LMB_Released);
+	PlayerInputComponent->BindAction("ChangeFireMode", IE_Pressed, this, &AStealthCharacter::ChangeFireMode);
 }

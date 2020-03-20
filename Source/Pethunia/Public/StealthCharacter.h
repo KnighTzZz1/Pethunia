@@ -128,8 +128,16 @@ private:
 	void SlideCooldownOff();
 
 	// Guns
-	
 	FTimerHandle ReloadTime;
+	FTimerHandle ShootHandle;
 	void ReloadWeapon();
+
+	void LMB_Released();
+	void ChangeFireMode();
+
+	bool CanShoot;
+
+	void ChangeShoot();
 	
+	void FireWeaponOnAuto(FHitResult *Hit, FVector Start, FVector End);
 };

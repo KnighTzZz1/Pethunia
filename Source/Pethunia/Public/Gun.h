@@ -11,6 +11,15 @@ class UBoxComponent;
 class USceneComponent;
 class UAnimMontage;
 
+
+UENUM(BlueprintType)
+enum class FireMode : uint8
+{
+	MODE_Single		UMETA(DisplayName = "Single Fire"),
+	MODE_Burst		UMETA(DisplayName = "Burst Fire"),
+	MODE_Auto		UMETA(DisplayName = "Auto Fire")
+};
+
 UCLASS()
 class PETHUNIA_API AGun : public AActor
 {
@@ -46,8 +55,13 @@ public:
 		float ShootDistance;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0.0", ClampMax = "10.0"))
 		float ReloadTime;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+		float RateOfFire;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0.0", ClampMax = "10.0"))
+		float FireDelay;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
 		FName GunName;
+	
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
 		UAnimMontage* ArmsReloadAnimation;
@@ -62,5 +76,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
 		UAnimMontage* WeaponFire02Animation;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
+		FireMode WeaponFireMode;
 
+	
+	void FireWeaponSingle(FHitResult *Hit, FVector Start, FVector End, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+	void FireWeaponBurst();
+	void FireWeaponAuto(FHitResult *Hit, FVector Start, FVector End, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+
+	bool Clicked;
+	
+
+	
+
+private:
+
+	FTimerHandle AutoFireHandle;
 };
