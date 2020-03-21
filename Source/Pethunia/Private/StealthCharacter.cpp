@@ -3,6 +3,7 @@
 
 #include "StealthCharacter.h"
 #include "PlayerEnergyComponent.h"
+#include "PlayerHealthComponent.h"
 #include "TimerManager.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -252,13 +253,19 @@ void AStealthCharacter::LMB()
 		ActiveWeapon->FireWeaponSingle(&Hit, Start, End, PlayerWeapon, Arms);
 		FTimerHandle ShootCooldown;
 		GetWorldTimerManager().SetTimer(ShootCooldown, this, &AStealthCharacter::ChangeShoot, ActiveWeapon->FireDelay);
-		
+		if (Hit.GetActor() != nullptr)
+		{
+			if (Hit.GetActor()->ActorHasTag("Player"))
+			{
+				APlayerCharacter* HitPlayer = (APlayerCharacter*)Hit.GetActor();
+				HitPlayer->HealthComponent->TakeDamage(ActiveWeapon->BulletDamage);
+			}
+		}
 	}
 	else if (ActiveWeapon->WeaponFireMode == FireMode::MODE_Auto)
 	{
 		CanShoot = false;
 		FireWeaponOnAuto(&Hit,Start,End);
-		
 	}
 
 }

@@ -59,6 +59,9 @@ public:
 		float RateOfFire;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0.0", ClampMax = "10.0"))
 		float FireDelay;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0.0", ClampMax = "100.0"))
+		float BulletDamage;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
 		FName GunName;
 	

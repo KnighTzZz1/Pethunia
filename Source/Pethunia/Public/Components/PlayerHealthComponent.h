@@ -24,7 +24,10 @@ protected:
 		float Health;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HealthComponent")
 		float MaxHealth;
-	
+
+public:
+
 	UFUNCTION(BlueprintCallable)
-	void TakeDamage(float damage);
+		void TakeDamage(float damage);
 };
+
