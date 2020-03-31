@@ -31,8 +31,18 @@ public:
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual void DashAbility() override;
+	
+	UFUNCTION(Server, reliable)
+		void Server_DashAbility();
 
 	virtual void CrouchStart() override;
+
+	UFUNCTION(Server, reliable)
+		void Server_CrouchStart();
+
+	UFUNCTION(Server, reliable)
+		void Server_CrouchStop();
+
 	virtual void CrouchStop() override;
 	
 	virtual void Power1Activate() override;
@@ -101,10 +111,13 @@ public:
 		void ClearAnims();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapons")
-		bool isReloading;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapons")
 		AGun* ActiveWeapon;
+
+
+	void UpdateSlidingSpeed();
+	UFUNCTION(Server, reliable)
+		void Server_UpdateSlidingSpeed(FVector force);
+
 private:
 
 	FVector LastLocation;
@@ -120,7 +133,7 @@ private:
 	FTimerHandle DashHandle;
 
 	// Sliding
-	void UpdateSlidingSpeed();
+
 	bool shouldUpdateAngle();
 	float GetSlidingAngle();
 	bool SlideIsOnCooldown;
@@ -130,14 +143,9 @@ private:
 	// Guns
 	FTimerHandle ReloadTime;
 	FTimerHandle ShootHandle;
-	void ReloadWeapon();
 
 	void LMB_Released();
 	void ChangeFireMode();
 
 	bool CanShoot;
-
-	void ChangeShoot();
-	
-	void FireWeaponOnAuto(FHitResult *Hit, FVector Start, FVector End);
 };

@@ -10,6 +10,7 @@ class USkeletalMeshComponent;
 class UBoxComponent;
 class USceneComponent;
 class UAnimMontage;
+class UCameraComponent;
 
 
 UENUM(BlueprintType)
@@ -83,16 +84,19 @@ public:
 		FireMode WeaponFireMode;
 
 	
-	void FireWeaponSingle(FHitResult *Hit, FVector Start, FVector End, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+	void FireWeaponSingle(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
 	void FireWeaponBurst();
-	void FireWeaponAuto(FHitResult *Hit, FVector Start, FVector End, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+	void FireWeaponAuto(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+	void FireWeapon(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+	void StopFire();
 
-	bool Clicked;
-	
-
-	
-
+	void ReloadWeapon(USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+	void ChangeFireMode();
+	bool isReloading;
 private:
-
-	FTimerHandle AutoFireHandle;
+	bool Clicked;
+	bool CanClick;
+	void UpdateCanClick();
+	void UpdateAmmo();
+	
 };

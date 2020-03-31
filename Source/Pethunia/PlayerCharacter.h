@@ -53,11 +53,21 @@ protected:
 
 	void Jump();
 
+	UFUNCTION(Server, reliable)
+		void Server_Jump();
+
 	virtual void CrouchStart() {};
 	virtual void CrouchStop() {};
 
 	void SprintStart();
+
+	UFUNCTION(Server, reliable)
+		void Server_SprintStart();
+
 	void SprintStop();
+
+	UFUNCTION(Server, reliable)
+		void Server_SprintStop();
 
 	virtual void Power1Activate() {};
 	virtual void Power1Deactivate() {};

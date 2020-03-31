@@ -14,5 +14,14 @@ class PETHUNIA_API AMainGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
-		
+	virtual void BeginPlay() override;	
+
+public:	
+
+	UFUNCTION()
+		void CheckIfGameOver();
+
+	UFUNCTION(BlueprintImplementableEvent)
+		void GameOver();
+
 };

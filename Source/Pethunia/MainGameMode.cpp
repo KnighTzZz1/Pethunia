@@ -3,3 +3,15 @@
 
 #include "MainGameMode.h"
 
+void AMainGameMode::BeginPlay()
+{
+    
+}
+
+void AMainGameMode::CheckIfGameOver()
+{
+    if(GetNumPlayers() == 1)
+    {
+        GameOver();
+    }
+}

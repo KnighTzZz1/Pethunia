@@ -288,7 +288,7 @@ void AStealthCharacter::Interact(AActor* ActorToInteract)
 		ActorToInteract->SetActorTickEnabled(false);
 		ActorToInteract->SetActorEnableCollision(false);
 		
-		
+
 	}
 }
 

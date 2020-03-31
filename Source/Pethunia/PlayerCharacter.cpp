@@ -22,6 +22,7 @@ APlayerCharacter::APlayerCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
 
 	HealthComponent = CreateDefaultSubobject<UPlayerHealthComponent>(TEXT("Player Health Component"));
 	EnergyComponent = CreateDefaultSubobject<UPlayerEnergyComponent>(TEXT("Player Energy Component"));
@@ -183,7 +184,7 @@ void APlayerCharacter::LookVertical(float Value)
 }
 
 
-void APlayerCharacter::Jump()
+void APlayerCharacter::Server_Jump_Implementation()
 {
 	if (IsOnLadder)
 	{
@@ -197,9 +198,33 @@ void APlayerCharacter::Jump()
 	}
 }
 
+void APlayerCharacter::Jump()
+{
+	if (IsOnLadder)
+	{
+		FVector Distance = GetActorLocation() - CurrentLadderLocation;
+		FVector Direction = FVector(Distance.X, Distance.Y, 0);
+		APlayerCharacter::LaunchCharacter(Direction.GetSafeNormal() * 1000, false, true);
+	}
+	else if (GetCharacterMovement()->IsMovingOnGround())
+	{
+		APlayerCharacter::LaunchCharacter(FVector(0.f, 0.f, JumpHeight), false, true);
+	}
+	Server_Jump();
+}
+
 void APlayerCharacter::SetRegStaminaTrue()
 {
 	RegStamina = true;
+}
+
+void APlayerCharacter::Server_SprintStart_Implementation()
+{
+	if (CurrentStamina <= 0) return;
+	GetWorldTimerManager().ClearTimer(StaminaRechargeTimer);
+	IsRunning = true;
+	RegStamina = false;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed * SprintSpeedMultiplier;
 }
 
 void APlayerCharacter::SprintStart()
@@ -209,6 +234,15 @@ void APlayerCharacter::SprintStart()
 	IsRunning = true;
 	RegStamina = false;
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed * SprintSpeedMultiplier;
+
+	Server_SprintStart();
+}
+
+void APlayerCharacter::Server_SprintStop_Implementation()
+{
+	IsRunning = false;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
+	GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::SetRegStaminaTrue, StaminaWaitTime, false);
 }
 
 void APlayerCharacter::SprintStop()
@@ -216,6 +250,8 @@ void APlayerCharacter::SprintStop()
 	IsRunning = false;
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::SetRegStaminaTrue, StaminaWaitTime, false);
+	
+	Server_SprintStop();
 }
 
 
