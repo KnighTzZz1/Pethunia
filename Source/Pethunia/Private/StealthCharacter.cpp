@@ -260,36 +260,93 @@ void AStealthCharacter::SlideCooldownOff()
 	SlideIsOnCooldown = false;
 }
 
+void AStealthCharacter::Server_Interact_Implementation(AActor* ActorToInteract)
+{
+	//if (ActorToInteract->ActorHasTag(FName(TEXT("Weapon"))))
+	//{
+
+	//	if (*inv.Find(1) == nullptr && *inv.Find(2) == nullptr)
+	//	{
+	//		inv.Add(1, (AGun*)ActorToInteract);
+	//		ActiveWeapon = (AGun*)ActorToInteract;
+	//		SetupAnims();
+	//	}
+	//	else if (*inv.Find(1) == nullptr)
+	//	{
+	//		inv.Add(1, (AGun*)ActorToInteract);
+	//		PutWeaponOnBack(ActorToInteract);
+	//	}
+	//	else if (*inv.Find(2) == nullptr)
+	//	{
+	//		inv.Add(2, (AGun*)ActorToInteract);
+	//		PutWeaponOnBack(ActorToInteract);
+	//	}
+	//	else
+	//	{
+	//		return;
+	//	}
+	//	
+	//}
+}
+
 void AStealthCharacter::Interact(AActor* ActorToInteract)
 {
+
 	if (ActorToInteract->ActorHasTag(FName(TEXT("Weapon"))))
 	{
-	
 		if (*inv.Find(1) == nullptr && *inv.Find(2) == nullptr)
 		{
+			print("Vapshe Ar Mqonda iaragi");
 			inv.Add(1, (AGun*)ActorToInteract);
 			ActiveWeapon = (AGun*)ActorToInteract;
 			SetupAnims();
 		}
 		else if (*inv.Find(1) == nullptr)
 		{
+			print("Pirveli Carieli iko");
 			inv.Add(1, (AGun*)ActorToInteract);
+			PutWeaponOnBack(ActorToInteract);
 		}
 		else if(*inv.Find(2) == nullptr)
 		{
+			print("Meore Carieli iko");
 			inv.Add(2, (AGun*)ActorToInteract);
+			PutWeaponOnBack(ActorToInteract);
 		}
 		else
 		{
+			print("Oriveshi mejira");
 			return;
 		}
-
-		ActorToInteract->SetActorHiddenInGame(true);
-		ActorToInteract->SetActorTickEnabled(false);
-		ActorToInteract->SetActorEnableCollision(false);
-		
-		
 	}
+}
+
+void AStealthCharacter::Multi_Interact_Implementation(AActor* ActorToInteract)
+{
+	//if (ActorToInteract->ActorHasTag(FName(TEXT("Weapon"))))
+	//{
+
+	//	if (*inv.Find(1) == nullptr && *inv.Find(2) == nullptr)
+	//	{
+	//		inv.Add(1, (AGun*)ActorToInteract);
+	//		ActiveWeapon = (AGun*)ActorToInteract;
+	//		SetupAnims();
+	//	}
+	//	else if (*inv.Find(1) == nullptr)
+	//	{
+	//		inv.Add(1, (AGun*)ActorToInteract);
+	//		PutWeaponOnBack(ActorToInteract);
+	//	}
+	//	else if (*inv.Find(2) == nullptr)
+	//	{
+	//		inv.Add(2, (AGun*)ActorToInteract);
+	//		PutWeaponOnBack(ActorToInteract);
+	//	}
+	//	else
+	//	{
+	//		return;
+	//	}
+	//}
 }
 
 void AStealthCharacter::LMB()
@@ -297,7 +354,7 @@ void AStealthCharacter::LMB()
 	if (!ActiveWeapon) return;
 	
 	FHitResult Hit;
-	ActiveWeapon->FireWeapon(&Hit, Camera, PlayerWeapon, Arms);
+	ActiveWeapon->FireWeapon(&Hit, Camera, Arms);
 }
 
 
@@ -316,11 +373,17 @@ void AStealthCharacter::ChangeFireMode()
 void AStealthCharacter::Reload()
 {
 	if (!ActiveWeapon) return;
-	ActiveWeapon->ReloadWeapon(PlayerWeapon,Arms);
+	ActiveWeapon->ReloadWeapon(Arms);
 }
 
 void AStealthCharacter::DropWeapon()
 {
+	if (HasAuthority())
+	{
+		Multi_DropWeapon();
+		return;
+	}
+
 	if (!ActiveWeapon) return; // If I don't have anything equiped, then I can't drop anything.
 
 	if (*inv.Find(1) == ActiveWeapon)
@@ -335,37 +398,137 @@ void AStealthCharacter::DropWeapon()
 	}
 
 	ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
-
-	ActiveWeapon->SetActorHiddenInGame(false);
-	ActiveWeapon->SetActorEnableCollision(true);
-	ActiveWeapon->SetActorTickEnabled(true);
-		
-	
+	Server_DropWeapon();
 	ActiveWeapon = nullptr; // Unequipe the gun
+	
+}
+
+void AStealthCharacter::Server_DropWeapon_Implementation()
+{
+	// if (*inv.Find(1) == ActiveWeapon)
+	// {
+	// 	inv.Add(1, nullptr);
+	// 	ClearAnims();
+	// }
+	// else
+	// {
+	// 	inv.Add(2, nullptr);
+	// 	ClearAnims();
+	// }
+
+	// ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
+
+	// ActiveWeapon = nullptr; // Unequipe the gun
+}
+
+void AStealthCharacter::Multi_DropWeapon_Implementation()
+{
+	// if (!ActiveWeapon) return; // If I don't have anything equiped, then I can't drop anything.
+
+	// if (*inv.Find(1) == ActiveWeapon)
+	// {
+	// 	inv.Add(1, nullptr);
+	// 	ClearAnims();
+	// }
+	// else
+	// {
+	// 	inv.Add(2, nullptr);
+	// 	ClearAnims();
+	// }
+
+	// ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
+
+	// ActiveWeapon = nullptr; // Unequipe the gun
 }
 
 void AStealthCharacter::EquipPrimary()
 {
+
 	if (*inv.Find(1) == nullptr)
 	{
 		print("No primary weapon");
 		return;
 	}
+	if (ActiveWeapon == *inv.Find(1)) return;
+	
 	ActiveWeapon = *inv.Find(1);
-	UE_LOG(LogTemp, Warning, TEXT("Weapon 1"));
+	SetupAnims();
+	if (*inv.Find(2) == nullptr) return;
+	PutWeaponOnBack(*inv.Find(2));
+
+}
+
+void AStealthCharacter::Server_EquipPrimary_Implementation()
+{
+	// if (*inv.Find(1) == nullptr)
+	// {
+	// 	return;
+	// }
+	// if (ActiveWeapon == *inv.Find(1)) return;
+	// ActiveWeapon = *inv.Find(1);
+	// SetupAnims();
+	// if (*inv.Find(2) == nullptr) return;
+	// PutWeaponOnBack(*inv.Find(2));
+}
+
+void AStealthCharacter::Multi_EquipPrimary_Implementation()
+{
+	// if (*inv.Find(1) == nullptr)
+	// {
+	// 	print("No primary weapon");
+	// 	return;
+	// }
+	// if (ActiveWeapon == *inv.Find(1)) return;
+	// ActiveWeapon = *inv.Find(1);
+	// SetupAnims();
+	// if (*inv.Find(2) == nullptr) return;
+	// PutWeaponOnBack(*inv.Find(2));
 }
 
 void AStealthCharacter::EquipSecondary()
 {
+
 	if (*inv.Find(2) == nullptr)
 	{
 		print("No secondary weapon");
 		return;
 	}
-	ActiveWeapon = *inv.Find(2);
-	UE_LOG(LogTemp, Warning, TEXT("Weapon 2"));
-
+	if (ActiveWeapon == *inv.Find(2)) return;
 	
+	ActiveWeapon = *inv.Find(2);
+	SetupAnims();
+	
+	if (*inv.Find(1) == nullptr) return;
+	PutWeaponOnBack(*inv.Find(1));
+
+}
+
+void AStealthCharacter::Server_EquipSecondary_Implementation()
+{
+	// if (*inv.Find(2) == nullptr)
+	// {
+	// 	return;
+	// }
+	// if (ActiveWeapon == *inv.Find(2)) return;
+	// ActiveWeapon = *inv.Find(2);
+	// SetupAnims();
+
+	// if (*inv.Find(1) == nullptr) return;
+	// PutWeaponOnBack(*inv.Find(1));
+}
+
+void AStealthCharacter::Multi_EquipSecondary_Implementation()
+{
+	// if (*inv.Find(2) == nullptr)
+	// {
+	// 	return;
+	// }
+	// if (ActiveWeapon == *inv.Find(2)) return;
+	// ActiveWeapon = *inv.Find(2);
+	// SetupAnims();
+
+	// if (*inv.Find(1) == nullptr) return;
+	// PutWeaponOnBack(*inv.Find(1));
 }
 
 void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)

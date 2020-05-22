@@ -260,6 +260,7 @@ void APlayerCharacter::TryToInteract()
 	FHitResult Hit;
 	FVector Start = Camera->GetComponentLocation();
 	FVector End = Start + Camera->GetForwardVector() * InteractionDistance;
+	
 	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End,ECollisionChannel::ECC_Visibility);
 	if (hasHit)
 	{

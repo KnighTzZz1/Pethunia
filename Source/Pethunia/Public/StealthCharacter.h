@@ -102,13 +102,26 @@ public:
 
 	UFUNCTION()
 		void EquipPrimary();
+	UFUNCTION(Server, reliable)
+		void Server_EquipPrimary();
+	UFUNCTION(NetMulticast, reliable)
+		void Multi_EquipPrimary();
+	
 	UFUNCTION()
 		void EquipSecondary();
+	UFUNCTION(Server, reliable)
+		void Server_EquipSecondary();
+	UFUNCTION(NetMulticast, reliable)
+		void Multi_EquipSecondary();
+
+
 
 	UFUNCTION(BlueprintImplementableEvent)
 		void SetupAnims();
 	UFUNCTION(BlueprintImplementableEvent)
 		void ClearAnims();
+	UFUNCTION(BlueprintImplementableEvent)
+		void PutWeaponOnBack(AActor* Weapon);
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapons")
 		AGun* ActiveWeapon;
@@ -117,6 +130,17 @@ public:
 	void UpdateSlidingSpeed();
 	UFUNCTION(Server, reliable)
 		void Server_UpdateSlidingSpeed(FVector force);
+
+	UFUNCTION(Server, reliable)
+		void Server_Interact(AActor* ActorToInteract);
+
+	UFUNCTION(NetMulticast, reliable)
+		void Multi_Interact(AActor* ActorToInteract);
+
+	UFUNCTION(Server, reliable)
+		void Server_DropWeapon();
+	UFUNCTION(NetMulticast, reliable)
+		void Multi_DropWeapon();
 
 private:
 

@@ -16,6 +16,7 @@ AGun::AGun()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
 
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
@@ -42,7 +43,6 @@ void AGun::BeginPlay()
 void AGun::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 void AGun::UpdateCanClick()
@@ -50,21 +50,21 @@ void AGun::UpdateCanClick()
 	CanClick = true;
 }
 
-void AGun::FireWeapon(FHitResult *Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeapon(FHitResult *Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
 {
 	if (!CanClick) return;
 	Clicked = true;
 	if (WeaponFireMode == FireMode::MODE_Single)
 	{
 		CanClick = false;
-		FireWeaponSingle(Hit,Camera,PlayerWeapon,PlayerArms);
+		FireWeaponSingle(Hit,Camera,PlayerArms);
 		FTimerHandle CanClickHandle;
 		GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
 	}
 	else if (WeaponFireMode == FireMode::MODE_Auto)
 	{
 		CanClick = false;
-		FireWeaponAuto(Hit,Camera,PlayerWeapon,PlayerArms);
+		FireWeaponAuto(Hit,Camera,PlayerArms);
 	}
 	else if (WeaponFireMode == FireMode::MODE_Burst)
 	{
@@ -72,7 +72,7 @@ void AGun::FireWeapon(FHitResult *Hit, UCameraComponent* Camera, USkeletalMeshCo
 	}
 }
 
-void AGun::FireWeaponSingle(FHitResult *Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeaponSingle(FHitResult *Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
 {
 	if (CurrentAmmo <= 0) return;
 
@@ -92,17 +92,17 @@ void AGun::FireWeaponSingle(FHitResult *Hit, UCameraComponent* Camera, USkeletal
 
 	if (FMath::RandRange(1, 2) == 1)
 	{
-		PlayerWeapon->GetAnimInstance()->Montage_Play(WeaponFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 	}
 	else
 	{
-		PlayerWeapon->GetAnimInstance()->Montage_Play(WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 	}
 }
 
-void AGun::FireWeaponAuto(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeaponAuto(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
 {
 	
 	if (Clicked == false || CurrentAmmo <= 0)
@@ -137,18 +137,19 @@ void AGun::FireWeaponAuto(FHitResult* Hit, UCameraComponent* Camera, USkeletalMe
 
 	if (FMath::RandRange(1, 2) == 1)
 	{
-		PlayerWeapon->GetAnimInstance()->Montage_Play(WeaponFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+
+		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 	}
 	else
 	{
-		PlayerWeapon->GetAnimInstance()->Montage_Play(WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 	}
 
 	// Recursive Call
 	FTimerHandle ShootHandle;
-	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AGun::FireWeaponAuto, Hit, Camera, PlayerWeapon,PlayerArms);
+	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AGun::FireWeaponAuto, Hit, Camera, PlayerArms);
 
 	GetWorldTimerManager().SetTimer(ShootHandle, ShootDelegate, RateOfFire, false);
 }
@@ -158,7 +159,7 @@ void AGun::StopFire()
 	Clicked = false;
 }
 
-void AGun::ReloadWeapon(USkeletalMeshComponent * PlayerWeapon, USkeletalMeshComponent * PlayerArms)
+void AGun::ReloadWeapon(USkeletalMeshComponent * PlayerArms)
 {
 	if (CurrentAmmo == MaxAmmo || NumberOfMagazines == 0 || isReloading) return;
 
@@ -167,7 +168,7 @@ void AGun::ReloadWeapon(USkeletalMeshComponent * PlayerWeapon, USkeletalMeshComp
 
 	if (ArmsReloadAnimation != nullptr && WeaponReloadAnimation != nullptr)
 	{
-		PlayerWeapon->GetAnimInstance()->Montage_Play(WeaponReloadAnimation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+		GunMesh->GetAnimInstance()->Montage_Play(WeaponReloadAnimation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 		PlayerArms->GetAnimInstance()->Montage_Play(ArmsReloadAnimation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 	}
 

@@ -84,13 +84,13 @@ public:
 		FireMode WeaponFireMode;
 
 	
-	void FireWeaponSingle(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+	void FireWeaponSingle(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
 	void FireWeaponBurst();
-	void FireWeaponAuto(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
-	void FireWeapon(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+	void FireWeaponAuto(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
+	void FireWeapon(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
 	void StopFire();
 
-	void ReloadWeapon(USkeletalMeshComponent* PlayerWeapon, USkeletalMeshComponent* PlayerArms);
+	void ReloadWeapon(USkeletalMeshComponent* PlayerArms);
 	void ChangeFireMode();
 	bool isReloading;
 private:
