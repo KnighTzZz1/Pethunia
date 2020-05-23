@@ -10,7 +10,6 @@
 #include "DrawDebugHelpers.h"
 #include "TimerManager.h"
 #include "Camera/CameraComponent.h"
-#include "PlayerHealthComponent.h"
 
 // Sets default values
 AGun::AGun()
@@ -54,7 +53,7 @@ void AGun::UpdateCanClick()
 	CanClick = true;
 }
 
-void AGun::FireWeapon(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeapon(FHitResult *Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
 {
 	if (!CanClick) return;
 	Clicked = true;
@@ -62,14 +61,14 @@ void AGun::FireWeapon(UCameraComponent* Camera, USkeletalMeshComponent* PlayerAr
 	if (WeaponFireMode == FireMode::MODE_Single)
 	{
 		CanClick = false;
-		FireWeaponSingle(Camera,PlayerArms);
+		FireWeaponSingle(Hit,Camera,PlayerArms);
 		FTimerHandle CanClickHandle;
 		GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
 	}
 	else if (WeaponFireMode == FireMode::MODE_Auto)
 	{
 		CanClick = false;
-		FireWeaponAuto(Camera,PlayerArms);
+		FireWeaponAuto(Hit,Camera,PlayerArms);
 	}
 	else if (WeaponFireMode == FireMode::MODE_Burst)
 	{
@@ -77,32 +76,20 @@ void AGun::FireWeapon(UCameraComponent* Camera, USkeletalMeshComponent* PlayerAr
 	}
 }
 
-void AGun::FireWeaponSingle(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeaponSingle(FHitResult *Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
 {
 	if (CurrentAmmo <= 0) return;
 
 	FVector Start = Camera->GetComponentLocation();
 	FVector End = Start + Camera->GetForwardVector() * ShootDistance;
 
-	FHitResult Hit;
-
 	// Action
-	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_GameTraceChannel1);
+	bool hasHit = GetWorld()->LineTraceSingleByChannel(*Hit, Start, End, ECollisionChannel::ECC_GameTraceChannel1);
 	if (hasHit)
 	{
-		DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Green, false, 2, false);
-
-		if (Hit.GetActor()->ActorHasTag(FName(TEXT("Damagable"))))
-		{
-			UPlayerHealthComponent* HitComponent = Cast<UPlayerHealthComponent>(Hit.GetActor()->GetComponentByClass(UPlayerHealthComponent::StaticClass()));
-			if (HitComponent)
-			{
-				HitComponent->TakeDamage(BulletDamage);
-			}
-		}
+		DrawDebugLine(GetWorld(), Start, Hit->Location, FColor::Green, false, 2, false);
 	}
 	CurrentAmmo--;
-
 	
 	// Animations
 	if (ArmsFire01Animation == nullptr || ArmsFire02Animation == nullptr || WeaponFire01Animation == nullptr || WeaponFire02Animation == nullptr) return;
@@ -119,7 +106,7 @@ void AGun::FireWeaponSingle(UCameraComponent* Camera, USkeletalMeshComponent* Pl
 	}
 }
 
-void AGun::FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeaponAuto(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
 {
 	
 	if (Clicked == false || CurrentAmmo <= 0)
@@ -128,27 +115,22 @@ void AGun::FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* Play
 		GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
 		return;
 	}
-	
+	if (!Hit) return;
 	if (!Camera) return;
 	
 	// Action
 	FVector Start = Camera->GetComponentLocation();
 	FVector Direction = Camera->GetForwardVector() * ShootDistance;
 	FVector End = Start + Direction;
-	FHitResult Hit;
 
 	FCollisionQueryParams CollisionParams;
-	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_GameTraceChannel1, CollisionParams);
+	bool hasHit = GetWorld()->LineTraceSingleByChannel(*Hit, Start, End, ECollisionChannel::ECC_GameTraceChannel1, CollisionParams);
 
 	if (hasHit)
 	{
-		DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Green, false, 2, false);
-		UPlayerHealthComponent* HitComponent = Cast<UPlayerHealthComponent>(Hit.GetActor()->GetComponentByClass(UPlayerHealthComponent::StaticClass()));
-		if (HitComponent)
-		{
-			HitComponent->TakeDamage(BulletDamage);
-		}
-		
+
+		UE_LOG(LogTemp, Warning, TEXT("Object Hit Is: %s"), *(Hit->GetActor()->GetName()));
+		DrawDebugLine(GetWorld(), Start, Hit->Location, FColor::Green, false, 2, false);
 		
 	} 
 	else
@@ -174,7 +156,7 @@ void AGun::FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* Play
 
 	// Recursive Call
 	FTimerHandle ShootHandle;
-	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AGun::FireWeaponAuto, Camera, PlayerArms);
+	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AGun::FireWeaponAuto, Hit, Camera, PlayerArms);
 
 	GetWorldTimerManager().SetTimer(ShootHandle, ShootDelegate, RateOfFire, false);
 }

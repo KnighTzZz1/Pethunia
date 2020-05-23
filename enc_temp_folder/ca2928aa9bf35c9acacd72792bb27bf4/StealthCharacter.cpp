@@ -356,8 +356,12 @@ void AStealthCharacter::LMB()
 {
 	if (!ActiveWeapon) return;
 	if (ActiveWeapon->isReloading) return;
-	
-	ActiveWeapon->FireWeapon(Camera, Arms);
+	FHitResult Hit;
+	ActiveWeapon->FireWeapon(&Hit, Camera, Arms);
+	if (Hit.GetActor()->ActorHasTag(FName(TEXT("Damagable"))))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Component Name: %s"), *Hit.GetComponent()->GetName());
+	}
 }
 
 

@@ -84,10 +84,10 @@ public:
 		FireMode WeaponFireMode;
 
 	
-	void FireWeaponSingle(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
+	void FireWeaponSingle(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
 	void FireWeaponBurst();
-	void FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
-	void FireWeapon(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
+	void FireWeaponAuto(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
+	void FireWeapon(FHitResult* Hit, UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
 	void StopFire();
 
 	void ReloadWeapon(USkeletalMeshComponent* PlayerArms);
