@@ -12,6 +12,7 @@
 #include "Camera/CameraComponent.h"
 #include "PlayerHealthComponent.h"
 
+
 // Sets default values
 AGun::AGun()
 {
@@ -83,6 +84,11 @@ void AGun::FireWeaponSingle(UCameraComponent* Camera, USkeletalMeshComponent* Pl
 
 	FVector Start = Camera->GetComponentLocation();
 	FVector End = Start + Camera->GetForwardVector() * ShootDistance;
+	
+	float xOffset = FMath::RandRange(BulletSpreadRadius * (-1), BulletSpreadRadius);
+	float zOffset = FMath::RandRange(BulletSpreadRadius * (-1), BulletSpreadRadius);
+
+	End = FVector(End.X + xOffset, End.Y, End.Z + zOffset);
 
 	FHitResult Hit;
 
@@ -135,6 +141,12 @@ void AGun::FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* Play
 	FVector Start = Camera->GetComponentLocation();
 	FVector Direction = Camera->GetForwardVector() * ShootDistance;
 	FVector End = Start + Direction;
+
+	float xOffset = FMath::RandRange(BulletSpreadRadius * (-1), BulletSpreadRadius);
+	float zOffset = FMath::RandRange(BulletSpreadRadius * (-1), BulletSpreadRadius);
+
+	End = FVector(End.X + xOffset, End.Y, End.Z + zOffset);
+
 	FHitResult Hit;
 
 	FCollisionQueryParams CollisionParams;

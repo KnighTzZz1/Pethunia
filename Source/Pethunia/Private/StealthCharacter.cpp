@@ -552,3 +552,17 @@ void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAction("Fire", IE_Released, this, &AStealthCharacter::LMB_Released);
 	PlayerInputComponent->BindAction("ChangeFireMode", IE_Pressed, this, &AStealthCharacter::ChangeFireMode);
 }
+
+//---------------------- T O D O -----------------------//
+/*
+	Add Camera Shake for:
+		Walking [-]
+		Running [-]
+		Jumping [-]
+		Falling [-]
+		Sliding [-]
+		Shooting [-]
+		Crouching [-]
+
+	
+*/

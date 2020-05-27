@@ -137,7 +137,7 @@ void APlayerCharacter::Tick(float DeltaTime)
 			GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 		}
 	}
-	if (GetCharacterMovement()->Velocity != FVector	::ZeroVector && !isSliding && !IsOnLadder && !bIsCrouched && GetCharacterMovement()->IsMovingOnGround())
+	if (GetCharacterMovement()->Velocity != FVector	::ZeroVector)
 	{
 		CameraWalkTimeline.TickTimeline(DeltaTime);
 	}

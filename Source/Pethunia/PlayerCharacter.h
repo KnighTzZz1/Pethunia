@@ -4,6 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Curves/CurveFloat.h"
+#include "Components/TimelineComponent.h"
+
+
 #include "PlayerCharacter.generated.h"
 
 class USpringArmComponent;
@@ -123,6 +127,26 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "500.0"))
 		float InteractionDistance;
+
+
+	// Camera Shake - - - Walk - - -
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+		UCurveFloat* CameraWalkCurve;
+	
+	FRotator Camera_InitialRotation;
+	FRotator Camera_TargetRotation;
+
+	FVector Camera_InitialLocation;
+	FVector Camera_TargetLocation;
+
+	FTimeline CameraWalkTimeline;
+
+	UFUNCTION()
+		void HandleCameraProgress(float value);
+
+	UPROPERTY(EditAnywhere, Category = "Camera")
+		float CameraOffset;
+	
 private:
 
 	void SetRegStaminaTrue();

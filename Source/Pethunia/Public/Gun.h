@@ -4,7 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Ammo.h"
 #include "Gun.generated.h"
+
 
 class USkeletalMeshComponent;
 class UBoxComponent;
@@ -62,6 +64,8 @@ public:
 		float FireDelay;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0.0", ClampMax = "100.0"))
 		float BulletDamage;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0.0", ClampMax = "300.0"))
+		float BulletSpreadRadius;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
 		FName GunName;
@@ -82,7 +86,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
 		FireMode WeaponFireMode;
-
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
+		EAmmoType AmmoType;
 	
 	void FireWeaponSingle(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
 	void FireWeaponBurst();
