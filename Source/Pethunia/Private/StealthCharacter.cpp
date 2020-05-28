@@ -556,13 +556,13 @@ void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 //---------------------- T O D O -----------------------//
 /*
 	Add Camera Shake for:
-		Walking [-]
+		Walking [+]
 		Running [-]
-		Jumping [-]
-		Falling [-]
-		Sliding [-]
+		Jumping [~] - Needs Fixing
+		Landing [~] - Needs Fixing
+		Sliding [+]
 		Shooting [-]
-		Crouching [-]
+		Crouching [+]
 
 	
 */

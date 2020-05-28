@@ -105,18 +105,34 @@ void APlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 	IsOnLadder = false;
 
-	FOnTimelineFloat ProgressFunction;
+	FOnTimelineFloat CameraWalkFunction;
+	FOnTimelineFloat CameraJumpFunction;
+	FOnTimelineFloat CameraLandFunction;
 
-	ProgressFunction.BindUFunction(this, FName("HandleCameraProgress"));
+	CameraWalkFunction.BindUFunction(this, FName("HandleCameraWalkProgress"));
+	CameraJumpFunction.BindUFunction(this, FName("HandleCameraJumpProgress"));
+	CameraLandFunction.BindUFunction(this, FName("HandleCameraLandProgress"));
 
-	CameraWalkTimeline.AddInterpFloat(CameraWalkCurve, ProgressFunction);
+	CameraWalkTimeline.AddInterpFloat(CameraWalkCurve, CameraWalkFunction);
 	CameraWalkTimeline.SetLooping(true);
 
-	Camera_InitialRotation = Camera->GetComponentRotation();
+	CameraJumpTimeline.AddInterpFloat(CameraJumpCurve, CameraJumpFunction);
+	CameraJumpTimeline.SetLooping(CameraJumpLoop);
+
+	CameraLandTimeline.AddInterpFloat(CameraLandingCurve, CameraLandFunction);
+	CameraJumpTimeline.SetLooping(false);
+
+	Camera_InitialRotation = Camera->GetRelativeTransform().GetRotation().Rotator();
 	Camera_TargetRotation = Camera_InitialRotation + FRotator(CameraOffset,0,0);
 	
 	Camera_InitialLocation = SpringArm->GetRelativeTransform().GetLocation();
 	Camera_TargetLocation = Camera_InitialLocation + FVector(0, 0, CameraOffset);
+
+	Camera_InitialJumpRotation = Camera->GetRelativeTransform().GetRotation().Rotator();
+	Camera_TargetJumpRotation = Camera_InitialJumpRotation + FRotator(CameraJumpOffset, 0, 0);
+
+	Camera_InitialLandRotation = Camera->GetRelativeTransform().GetRotation().Rotator();
+	Camera_TargetLandRotation = FRotator::ZeroRotator + FRotator(CameraLandOffset, 0, 0);
 
 	CameraWalkTimeline.PlayFromStart();
 }
@@ -141,7 +157,12 @@ void APlayerCharacter::Tick(float DeltaTime)
 	{
 		CameraWalkTimeline.TickTimeline(DeltaTime);
 	}
-
+	if (!GetCharacterMovement()->IsMovingOnGround())
+	{
+		CameraJumpTimeline.TickTimeline(DeltaTime);
+	}
+			
+	CameraLandTimeline.TickTimeline(DeltaTime);
 }
 
 void APlayerCharacter::MoveForward(float Value)
@@ -166,11 +187,19 @@ void APlayerCharacter::MoveForward(float Value)
 			}
 			else
 			{
-				
 				AddMovementInput(Direction, Value);
 			}
 		}
 	}
+}
+
+void APlayerCharacter::Landed(const FHitResult & Hit)
+{
+	Super::Landed(Hit);
+
+	UE_LOG(LogTemp, Warning, TEXT("Initial: %s"), *Camera_InitialLandRotation.ToString());
+	UE_LOG(LogTemp, Warning, TEXT("Target: %s"), *Camera_TargetLandRotation.ToString());
+	CameraLandTimeline.PlayFromStart();
 }
 
 void APlayerCharacter::MoveRight(float Value)
@@ -230,6 +259,7 @@ void APlayerCharacter::Jump()
 	else if (GetCharacterMovement()->IsMovingOnGround())
 	{
 		APlayerCharacter::LaunchCharacter(FVector(0.f, 0.f, JumpHeight), false, true);
+		CameraJumpTimeline.PlayFromStart();
 	}
 	Server_Jump();
 }
@@ -256,7 +286,10 @@ void APlayerCharacter::SprintStart()
 	RegStamina = false;
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed * SprintSpeedMultiplier;
 
-	Server_SprintStart();
+	// Camera Shake
+	//Camera_TargetLocation += FVector(CameraOffset, 0, 0);
+
+	//Server_SprintStart();
 }
 
 void APlayerCharacter::Server_SprintStop_Implementation()
@@ -272,7 +305,10 @@ void APlayerCharacter::SprintStop()
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::SetRegStaminaTrue, StaminaWaitTime, false);
 	
-	Server_SprintStop();
+	//Camera Shake
+	//Camera_TargetLocation -= FVector(CameraOffset, 0, 0);
+
+	//Server_SprintStop();
 }
 
 
@@ -295,13 +331,26 @@ void APlayerCharacter::TryToInteract()
 	}
 }
 
-void APlayerCharacter::HandleCameraProgress(float value)
+void APlayerCharacter::HandleCameraWalkProgress(float value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Test: %f"), value);
 	FRotator NewRotation = FMath::Lerp(Camera_InitialRotation, Camera_TargetRotation, value);
-	FVector NewLocation = FMath::Lerp(Camera_InitialLocation, Camera_TargetLocation, value);
 	Camera->SetRelativeRotation(NewRotation);
+
+	FVector NewLocation = FMath::Lerp(Camera_InitialLocation, Camera_TargetLocation, value);
 	SpringArm->SetRelativeLocation(NewLocation);
+}
+
+void APlayerCharacter::HandleCameraJumpProgress(float value)
+{
+	FRotator NewRotation = FMath::Lerp(Camera_InitialJumpRotation, Camera_TargetJumpRotation, value);
+	Camera->SetRelativeRotation(NewRotation);
+}
+
+void APlayerCharacter::HandleCameraLandProgress(float value)
+{
+	
+	FRotator NewRotation = FMath::Lerp(Camera_InitialLandRotation, Camera_TargetLandRotation, value);
+	Camera->SetRelativeRotation(NewRotation);
 }
 
 // Called to bind functionality to input

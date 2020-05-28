@@ -40,6 +40,8 @@ public:
 
 	virtual void DashAbility() {};
 
+	virtual void Landed(const FHitResult & Hit) override;
+
 	void Tick(float DeltaTime) override;
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	FTimerHandle StaminaRechargeTimer;
@@ -48,6 +50,8 @@ protected:
 	bool isSliding;
 
 	void BeginPlay() override;
+
+	
 
 	// Movement
 	void MoveForward(float value);
@@ -133,24 +137,53 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 		UCurveFloat* CameraWalkCurve;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+		UCurveFloat* CameraJumpCurve;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+		UCurveFloat* CameraLandingCurve;
+
 	FRotator Camera_InitialRotation;
 	FRotator Camera_TargetRotation;
+
+	FRotator Camera_InitialJumpRotation;
+	FRotator Camera_TargetJumpRotation;
+
+	FRotator Camera_InitialLandRotation;
+	FRotator Camera_TargetLandRotation;
 
 	FVector Camera_InitialLocation;
 	FVector Camera_TargetLocation;
 
 	FTimeline CameraWalkTimeline;
 
+	FTimeline CameraJumpTimeline;
+
+	FTimeline CameraLandTimeline;
+
 	UFUNCTION()
-		void HandleCameraProgress(float value);
+		void HandleCameraWalkProgress(float value);
+	UFUNCTION()
+		void HandleCameraJumpProgress(float value);
+	UFUNCTION()
+		void HandleCameraLandProgress(float value);
 
 	UPROPERTY(EditAnywhere, Category = "Camera")
 		float CameraOffset;
+
+	UPROPERTY(EditAnywhere, Category = "Camera")
+		float CameraJumpOffset;
+
+	UPROPERTY(EditAnywhere, Category = "Camera")
+		float CameraLandOffset;
+
+	UPROPERTY(EditAnywhere, Category = "Camera")
+		bool CameraJumpLoop;
 	
 private:
 
 	void SetRegStaminaTrue();
-
+	 
 	FVector CurrentLadderLocation;
 	FVector CurrentLadderForwardVector;
 	FVector CurrentLadderUpVector;

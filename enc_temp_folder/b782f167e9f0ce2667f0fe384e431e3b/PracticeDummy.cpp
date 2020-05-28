@@ -50,6 +50,7 @@ void APracticeDummy::Tick(float DeltaTime)
 
 		if (FVector::Dist(TargetLocation, DummyMesh->GetComponentLocation()) <= Offset)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Mivedi Objectze"));
 			if (index == Positions.Num() - 1)
 				dif = -1;
 			else if (index == 0)
