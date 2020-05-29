@@ -122,17 +122,17 @@ void APlayerCharacter::BeginPlay()
 	CameraLandTimeline.AddInterpFloat(CameraLandingCurve, CameraLandFunction);
 	CameraJumpTimeline.SetLooping(false);
 
-	Camera_InitialRotation = Camera->GetComponentRotation();
+	Camera_InitialRotation = Camera->GetRelativeTransform().GetRotation().Rotator();
 	Camera_TargetRotation = Camera_InitialRotation + FRotator(CameraOffset,0,0);
 	
 	Camera_InitialLocation = SpringArm->GetRelativeTransform().GetLocation();
 	Camera_TargetLocation = Camera_InitialLocation + FVector(0, 0, CameraOffset);
 
-	Camera_InitialJumpRotation = Camera->GetComponentRotation();
+	Camera_InitialJumpRotation = Camera->GetRelativeTransform().GetRotation().Rotator();
 	Camera_TargetJumpRotation = Camera_InitialJumpRotation + FRotator(CameraJumpOffset, 0, 0);
 
+	Camera_InitialLandRotation = Camera->GetRelativeTransform().GetRotation().Rotator();
 	Camera_TargetLandRotation = FRotator::ZeroRotator + FRotator(CameraLandOffset, 0, 0);
-	Camera_InitialLandRotation = FRotator::ZeroRotator;
 
 	CameraWalkTimeline.PlayFromStart();
 }
@@ -196,8 +196,6 @@ void APlayerCharacter::MoveForward(float Value)
 void APlayerCharacter::Landed(const FHitResult & Hit)
 {
 	Super::Landed(Hit);
-	Camera_InitialLandRotation.Pitch = Camera->GetComponentRotation().Pitch;
-	
 
 	UE_LOG(LogTemp, Warning, TEXT("Initial: %s"), *Camera_InitialLandRotation.ToString());
 	UE_LOG(LogTemp, Warning, TEXT("Target: %s"), *Camera_TargetLandRotation.ToString());

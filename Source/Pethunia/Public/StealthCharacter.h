@@ -142,6 +142,9 @@ public:
 	UFUNCTION(NetMulticast, reliable)
 		void Multi_DropWeapon();
 
+	UFUNCTION()
+		void TryPickingUpWeapon(AGun* weapon);
+
 private:
 
 	FVector LastLocation;

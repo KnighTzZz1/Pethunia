@@ -196,9 +196,6 @@ void APlayerCharacter::MoveForward(float Value)
 void APlayerCharacter::Landed(const FHitResult & Hit)
 {
 	Super::Landed(Hit);
-
-	UE_LOG(LogTemp, Warning, TEXT("Initial: %s"), *Camera_InitialLandRotation.ToString());
-	UE_LOG(LogTemp, Warning, TEXT("Target: %s"), *Camera_TargetLandRotation.ToString());
 	CameraLandTimeline.PlayFromStart();
 }
 

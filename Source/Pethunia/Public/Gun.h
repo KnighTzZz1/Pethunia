@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Ammo.h"
+#include "Components/TimelineComponent.h"
+#include "Curves/CurveFloat.h"
+
 #include "Gun.generated.h"
 
 
@@ -102,8 +105,27 @@ public:
 	bool isReloading;
 	bool isFiring;
 
+	AActor* GunOwner;
 	
+	UFUNCTION()
+		void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	// For Idle Animations
+	FTimeline IdleTimeline;
+	
+	UPROPERTY(EditAnywhere)
+		float IdleOffset;
+	UPROPERTY(EditAnywhere)
+		UCurveFloat* GunFloatingCurve;
+	UFUNCTION()
+		void HandleGunFloatingProgress(float value);
+
+	void UpdateGunPosition();
+
 private:
+	FVector InitialLocation;
+	FVector TargetLocation;
+
 	bool Clicked;
 	bool CanClick;
 	void UpdateCanClick();
