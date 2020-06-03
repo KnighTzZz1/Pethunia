@@ -302,12 +302,14 @@ void AStealthCharacter::Interact(AActor* ActorToInteract)
 
 void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 {
+	if (weapon->GunOwner) return;
 	if (*inv.Find(1) == nullptr && *inv.Find(2) == nullptr)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No Weapon"));
 		inv.Add(1, weapon);
 		ActiveWeapon = weapon;
 		ActiveWeapon->GunOwner = this;
+		ActiveWeapon->Owner_Camera = Camera;
 		SetupAnims();
 	}
 	else if (*inv.Find(1) == nullptr)
@@ -315,6 +317,7 @@ void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 		UE_LOG(LogTemp, Warning, TEXT("No Primary"));
 		inv.Add(1, weapon);
 		weapon->GunOwner = this;
+		weapon->Owner_Camera = Camera;
 		PutWeaponOnBack(weapon);
 	}
 	else if (*inv.Find(2) == nullptr)
@@ -323,6 +326,7 @@ void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 		inv.Add(2, weapon);
 
 		weapon->GunOwner = this;
+		weapon->Owner_Camera = Camera;
 		PutWeaponOnBack(weapon);
 	}
 	else
@@ -365,7 +369,7 @@ void AStealthCharacter::LMB()
 	if (!ActiveWeapon) return;
 	if (ActiveWeapon->isReloading) return;
 	
-	ActiveWeapon->FireWeapon(Camera, Arms);
+	ActiveWeapon->FireWeapon(Arms);
 }
 
 
@@ -408,8 +412,10 @@ void AStealthCharacter::DropWeapon()
 	}
 
 	ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
+	
 	ActiveWeapon->UpdateGunPosition();
 	ActiveWeapon->GunOwner = nullptr;
+	ActiveWeapon->Owner_Camera = nullptr;
 	ActiveWeapon = nullptr; // Unequipe the gun
 	
 }

@@ -58,6 +58,16 @@ void AGun::BeginPlay()
 	UpdateGunPosition();
 
 	IdleTimeline.PlayFromStart();
+
+
+	FOnTimelineFloat GunShootFunction;
+	GunShootFunction.BindUFunction(this, FName("HandleGunShootProgress"));
+
+	GunShakeTimeline.AddInterpFloat(GunFireCurve, GunShootFunction);
+	GunShakeTimeline.SetLooping(false);
+
+	
+
 }
 
 // Called every frame
@@ -69,6 +79,7 @@ void AGun::Tick(float DeltaTime)
 		
 		IdleTimeline.TickTimeline(DeltaTime);
 	}
+	GunShakeTimeline.TickTimeline(DeltaTime);
 }
 
 void AGun::HandleGunFloatingProgress(float value)
@@ -83,7 +94,7 @@ void AGun::UpdateCanClick()
 	CanClick = true;
 }
 
-void AGun::FireWeapon(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeapon(USkeletalMeshComponent* PlayerArms)
 {
 	if (!CanClick) return;
 	Clicked = true;
@@ -91,14 +102,14 @@ void AGun::FireWeapon(UCameraComponent* Camera, USkeletalMeshComponent* PlayerAr
 	if (WeaponFireMode == FireMode::MODE_Single)
 	{
 		CanClick = false;
-		FireWeaponSingle(Camera,PlayerArms);
+		FireWeaponSingle(PlayerArms);
 		FTimerHandle CanClickHandle;
 		GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
 	}
 	else if (WeaponFireMode == FireMode::MODE_Auto)
 	{
 		CanClick = false;
-		FireWeaponAuto(Camera,PlayerArms);
+		FireWeaponAuto(PlayerArms);
 	}
 	else if (WeaponFireMode == FireMode::MODE_Burst)
 	{
@@ -106,12 +117,12 @@ void AGun::FireWeapon(UCameraComponent* Camera, USkeletalMeshComponent* PlayerAr
 	}
 }
 
-void AGun::FireWeaponSingle(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeaponSingle(USkeletalMeshComponent* PlayerArms)
 {
 	if (CurrentAmmo <= 0) return;
 
-	FVector Start = Camera->GetComponentLocation();
-	FVector End = Start + Camera->GetForwardVector() * ShootDistance;
+	FVector Start = Owner_Camera->GetComponentLocation();
+	FVector End = Start + Owner_Camera->GetForwardVector() * ShootDistance;
 	
 	float xOffset = FMath::RandRange(BulletSpreadRadius * (-1), BulletSpreadRadius);
 	float zOffset = FMath::RandRange(BulletSpreadRadius * (-1), BulletSpreadRadius);
@@ -152,9 +163,11 @@ void AGun::FireWeaponSingle(UCameraComponent* Camera, USkeletalMeshComponent* Pl
 		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 	}
+	
+	GunShakeTimeline.PlayFromStart();
 }
 
-void AGun::FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeaponAuto(USkeletalMeshComponent* PlayerArms)
 {
 	
 	if (Clicked == false || CurrentAmmo <= 0)
@@ -164,11 +177,11 @@ void AGun::FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* Play
 		return;
 	}
 	
-	if (!Camera) return;
+	if (!Owner_Camera) return;
 	
 	// Action
-	FVector Start = Camera->GetComponentLocation();
-	FVector Direction = Camera->GetForwardVector() * ShootDistance;
+	FVector Start = Owner_Camera->GetComponentLocation();
+	FVector Direction = Owner_Camera->GetForwardVector() * ShootDistance;
 	FVector End = Start + Direction;
 
 	float xOffset = FMath::RandRange(BulletSpreadRadius * (-1), BulletSpreadRadius);
@@ -214,9 +227,11 @@ void AGun::FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* Play
 		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 	}
 
+	GunShakeTimeline.PlayFromStart();
+
 	// Recursive Call
 	FTimerHandle ShootHandle;
-	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AGun::FireWeaponAuto, Camera, PlayerArms);
+	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AGun::FireWeaponAuto, PlayerArms);
 
 	GetWorldTimerManager().SetTimer(ShootHandle, ShootDelegate, RateOfFire, false);
 }
@@ -267,7 +282,6 @@ void AGun::OnOverlapBegin(UPrimitiveComponent * OverlappedComp, AActor * OtherAc
 {
 	if (OtherActor && OtherComp && OtherComp->ComponentHasTag(FName(TEXT("GunCheck"))))
 	{
-		if (GunOwner) return;
 		AStealthCharacter* player = (AStealthCharacter*)OtherActor;
 		player->TryPickingUpWeapon(this);
 	}
@@ -277,4 +291,18 @@ void AGun::UpdateGunPosition()
 {
 	InitialLocation = GetActorLocation();
 	TargetLocation = InitialLocation + FVector(0, 0, IdleOffset);
+}
+
+void AGun::HandleGunShootProgress(float value)
+{
+	FRotator NewRotation = FRotator(value * HipFire, 0, 0);
+	if (Owner_Camera)
+	{
+		Owner_Camera->SetRelativeRotation(NewRotation);
+	}
+}
+
+void AGun::UpdateGunRecoil()
+{
+
 }

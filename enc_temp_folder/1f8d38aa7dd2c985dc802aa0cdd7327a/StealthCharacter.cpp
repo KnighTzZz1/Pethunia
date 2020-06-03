@@ -19,6 +19,8 @@
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 
+#include "Pethunia.h"
+
 #define print(text) if(GEngine) GEngine->AddOnScreenDebugMessage(-1,1.5f,FColor::Green, TEXT(text));
 #define printVector(vector) UE_LOG(LogTemp,Warning,TEXT("Vector: %s"),*vector.ToString());
 
@@ -300,9 +302,10 @@ void AStealthCharacter::Interact(AActor* ActorToInteract)
 
 void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 {
+	if (weapon->GunOwner) return;
 	if (*inv.Find(1) == nullptr && *inv.Find(2) == nullptr)
 	{
-
+		UE_LOG(LogTemp, Warning, TEXT("No Weapon"));
 		inv.Add(1, weapon);
 		ActiveWeapon = weapon;
 		ActiveWeapon->GunOwner = this;
@@ -310,14 +313,14 @@ void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 	}
 	else if (*inv.Find(1) == nullptr)
 	{
-
+		UE_LOG(LogTemp, Warning, TEXT("No Primary"));
 		inv.Add(1, weapon);
 		weapon->GunOwner = this;
 		PutWeaponOnBack(weapon);
 	}
 	else if (*inv.Find(2) == nullptr)
 	{
-
+		UE_LOG(LogTemp, Warning, TEXT("No Secondary"));
 		inv.Add(2, weapon);
 
 		weapon->GunOwner = this;
@@ -325,6 +328,7 @@ void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 	}
 	else
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Both Weapons"));
 		return;
 	}
 }
@@ -570,7 +574,13 @@ void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 		Shooting [-]
 		Crouching [+]
 
+	Gun Idle State FX
+*/
+
+
+//---------------------- D O N E -----------------------//
+/*
 	Gun Idle State Animations - DONE
 
-	Gun PickUp when Overlapping
+	Gun PickUp when Overlapping - DONE
 */

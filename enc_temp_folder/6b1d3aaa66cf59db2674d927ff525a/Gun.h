@@ -92,10 +92,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
 		EAmmoType AmmoType;
 	
-	void FireWeaponSingle(USkeletalMeshComponent* PlayerArms);
+	void FireWeaponSingle(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
 	void FireWeaponBurst();
-	void FireWeaponAuto(USkeletalMeshComponent* PlayerArms);
-	void FireWeapon(USkeletalMeshComponent* PlayerArms);
+	void FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
+	void FireWeapon(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms);
 	void StopFire();
 
 	void ReloadWeapon(USkeletalMeshComponent* PlayerArms);
@@ -126,7 +126,7 @@ public:
 
 	FTimeline GunShakeTimeline;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere)
 		UCurveFloat* GunFireCurve;
 	
 	UFUNCTION()
@@ -134,10 +134,6 @@ public:
 	
 
 	void UpdateGunRecoil();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun")
-		float HipFire;
-	UCameraComponent* Owner_Camera;
 
 private:
 	FRotator Camera_InitialRotation;

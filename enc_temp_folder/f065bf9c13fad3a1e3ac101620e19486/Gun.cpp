@@ -12,6 +12,7 @@
 #include "Camera/CameraComponent.h"
 #include "PlayerHealthComponent.h"
 #include "Pethunia.h"
+#include "StealthCharacter.h"
 
 
 
@@ -57,6 +58,16 @@ void AGun::BeginPlay()
 	UpdateGunPosition();
 
 	IdleTimeline.PlayFromStart();
+
+
+	FOnTimelineFloat GunShootFunction;
+	GunShootFunction.BindUFunction(this, FName("HandleGunShootProgress"));
+
+	GunShakeTimeline.AddInterpFloat(GunFireCurve, GunShootFunction);
+	GunShakeTimeline.SetLooping(false);
+
+	
+
 }
 
 // Called every frame
@@ -68,6 +79,7 @@ void AGun::Tick(float DeltaTime)
 		
 		IdleTimeline.TickTimeline(DeltaTime);
 	}
+	GunShakeTimeline.TickTimeline(DeltaTime);
 }
 
 void AGun::HandleGunFloatingProgress(float value)
@@ -151,6 +163,8 @@ void AGun::FireWeaponSingle(UCameraComponent* Camera, USkeletalMeshComponent* Pl
 		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
 	}
+	
+	GunShakeTimeline.PlayFromStart();
 }
 
 void AGun::FireWeaponAuto(UCameraComponent* Camera, USkeletalMeshComponent* PlayerArms)
@@ -264,9 +278,10 @@ void AGun::ChangeFireMode()
 
 void AGun::OnOverlapBegin(UPrimitiveComponent * OverlappedComp, AActor * OtherActor, UPrimitiveComponent * OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
-	if (OtherActor)
+	if (OtherActor && OtherComp && OtherComp->ComponentHasTag(FName(TEXT("GunCheck"))))
 	{
-		UE_LOG(LogMe, Warning, TEXT("Overlapping A Gun"));
+		AStealthCharacter* player = (AStealthCharacter*)OtherActor;
+		player->TryPickingUpWeapon(this);
 	}
 }
 
@@ -274,4 +289,14 @@ void AGun::UpdateGunPosition()
 {
 	InitialLocation = GetActorLocation();
 	TargetLocation = InitialLocation + FVector(0, 0, IdleOffset);
+}
+
+void AGun::HandleGunShootProgress(float value)
+{
+	
+}
+
+void AGun::UpdateGunRecoil()
+{
+
 }
