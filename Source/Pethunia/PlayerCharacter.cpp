@@ -58,6 +58,8 @@ APlayerCharacter::APlayerCharacter()
 
 	IsOnLadder = false;
 
+	resetJumpStartHeight = true;
+
 	CrouchSpeedMultiplier = 0.5f;
 	StaminaWaitTime = 2.f;
 	StaminaRegenMultiplier = 0.5f;
@@ -133,6 +135,8 @@ void APlayerCharacter::BeginPlay()
 
 	Camera_InitialLandRotation = Camera->GetRelativeTransform().GetRotation().Rotator();
 	Camera_TargetLandRotation = FRotator::ZeroRotator + FRotator(CameraLandOffset, 0, 0);
+	
+	Camera_InitialLandLocation = Camera->GetRelativeTransform().GetLocation();
 
 	CameraWalkTimeline.PlayFromStart();
 }
@@ -160,6 +164,11 @@ void APlayerCharacter::Tick(float DeltaTime)
 	if (!GetCharacterMovement()->IsMovingOnGround())
 	{
 		CameraJumpTimeline.TickTimeline(DeltaTime);
+	}
+	if (resetJumpStartHeight && !GetCharacterMovement()->IsMovingOnGround())
+	{
+		resetJumpStartHeight = false;
+		JumpStartHeight = GetGameTimeSinceCreation();
 	}
 			
 	CameraLandTimeline.TickTimeline(DeltaTime);
@@ -193,11 +202,6 @@ void APlayerCharacter::MoveForward(float Value)
 	}
 }
 
-void APlayerCharacter::Landed(const FHitResult & Hit)
-{
-	Super::Landed(Hit);
-	CameraLandTimeline.PlayFromStart();
-}
 
 void APlayerCharacter::MoveRight(float Value)
 {
@@ -215,6 +219,10 @@ void APlayerCharacter::MoveRight(float Value)
 				FVector NewDirection = CurrentLadderForwardVector * a;
 				AddMovementInput(NewDirection, Value);
 			}
+			else if (!GetCharacterMovement()->IsMovingOnGround())
+			{
+				AddMovementInput(Direction * 0.3, Value);
+			}
 			else AddMovementInput(Direction, Value);
 		}
 	}
@@ -228,6 +236,35 @@ void APlayerCharacter::LookHorizontal(float Value)
 void APlayerCharacter::LookVertical(float Value)
 {
 	AddControllerPitchInput(Value * PitchRate * GetWorld()->GetDeltaSeconds());
+}
+
+
+void APlayerCharacter::SlowMovementOnLand()
+{
+	GetCharacterMovement()->MaxWalkSpeed -= SlowAmmoundOnLand;
+	FTimerHandle LandingTimer;
+	GetWorldTimerManager().SetTimer(LandingTimer, this, &APlayerCharacter::RemoveLandingSlow, LandingSlowDuration, false);
+}
+
+void APlayerCharacter::RemoveLandingSlow()
+{
+	UE_LOG(LogTemp, Warning, TEXT("REMOVED SLOW"));
+	GetCharacterMovement()->MaxWalkSpeed += SlowAmmoundOnLand;
+}
+
+void APlayerCharacter::Landed(const FHitResult & Hit)
+{
+	Super::Landed(Hit);
+	UE_LOG(LogTemp, Warning, TEXT("ADDED SLOW"));
+	SlowMovementOnLand();
+
+	resetJumpStartHeight = true;
+	float LandHeight = GetGameTimeSinceCreation();
+
+
+	Camera_TargetLandLocation = FVector::ZeroVector + FVector(0, 0, CameraLandOffset * (LandHeight - JumpStartHeight));
+	if (Camera_TargetLandLocation.Z < CAMERA_LAND_MAX_HEIGHT) Camera_TargetLandLocation.Z = CAMERA_LAND_MAX_HEIGHT;
+	CameraLandTimeline.PlayFromStart();
 }
 
 
@@ -247,6 +284,7 @@ void APlayerCharacter::Server_Jump_Implementation()
 
 void APlayerCharacter::Jump()
 {
+	
 	if (IsOnLadder)
 	{
 		FVector Distance = GetActorLocation() - CurrentLadderLocation;
@@ -345,9 +383,16 @@ void APlayerCharacter::HandleCameraJumpProgress(float value)
 
 void APlayerCharacter::HandleCameraLandProgress(float value)
 {
-	
-	FRotator NewRotation = FMath::Lerp(Camera_InitialLandRotation, Camera_TargetLandRotation, value);
-	Camera->SetRelativeRotation(NewRotation);
+	if (CameraRotateOnLand)
+	{
+		FRotator NewRotation = FMath::Lerp(Camera_InitialLandRotation, Camera_TargetLandRotation, value);
+		Camera->SetRelativeRotation(NewRotation);
+	}
+	if (CameraMoveOnLand)
+	{
+		FVector NewLocation = FMath::Lerp(Camera_InitialLandLocation, Camera_TargetLandLocation, value);
+		Camera->SetRelativeLocation(NewLocation);
+	}
 }
 
 // Called to bind functionality to input
@@ -372,3 +417,5 @@ void APlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCom
 	PlayerInputComponent->BindAxis("LookHorizontal", this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxis("LookVertical", this, &APawn::AddControllerPitchInput);
 }
+
+

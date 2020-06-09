@@ -30,6 +30,8 @@ public:
 	
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 	virtual void DashAbility() override;
 	
 	UFUNCTION(Server, reliable)
@@ -54,7 +56,14 @@ public:
 	virtual void Reload() override;
 	virtual void DropWeapon() override;
 
+	UFUNCTION(Server, reliable, WithValidation)
+		void Server_LMB();
 
+	UFUNCTION(Server, reliable, WithValidation)
+		void Server_DropWeapon();
+
+	UFUNCTION(Server, reliable, WithValidation)
+		void Server_Reload();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "1.0", ClampMax = "2.0"))
 		float IncreasedEnergyMultiplier;
@@ -104,15 +113,13 @@ public:
 		void EquipPrimary();
 	UFUNCTION(Server, reliable)
 		void Server_EquipPrimary();
-	UFUNCTION(NetMulticast, reliable)
-		void Multi_EquipPrimary();
+
 	
 	UFUNCTION()
 		void EquipSecondary();
 	UFUNCTION(Server, reliable)
 		void Server_EquipSecondary();
-	UFUNCTION(NetMulticast, reliable)
-		void Multi_EquipSecondary();
+
 
 
 
@@ -123,7 +130,7 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 		void PutWeaponOnBack(AActor* Weapon);
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapons")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Weapons")
 		AGun* ActiveWeapon;
 
 
@@ -134,13 +141,9 @@ public:
 	UFUNCTION(Server, reliable)
 		void Server_Interact(AActor* ActorToInteract);
 
-	UFUNCTION(NetMulticast, reliable)
-		void Multi_Interact(AActor* ActorToInteract);
 
-	UFUNCTION(Server, reliable)
-		void Server_DropWeapon();
-	UFUNCTION(NetMulticast, reliable)
-		void Multi_DropWeapon();
+
+
 
 	UFUNCTION()
 		void TryPickingUpWeapon(AGun* weapon);

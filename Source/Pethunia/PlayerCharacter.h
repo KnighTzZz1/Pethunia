@@ -17,6 +17,8 @@ class UPlayerHealthComponent;
 class UPlayerEnergyComponent;
 class UCapsuleComponent;
 
+static const float CAMERA_LAND_MAX_HEIGHT = -35;
+
 UCLASS()
 class PETHUNIA_API APlayerCharacter : public ACharacter
 {
@@ -115,6 +117,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "5"))
 		float StaminaCostOnSprint;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player", meta = (ClampMin = "0.0"))
+		float SlowAmmoundOnLand;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player", meta = (ClampMin = "0.0", ClampMax = "5.0"))
+		float LandingSlowDuration;
+
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
 		bool IsRunning;
 	UPROPERTY(BlueprintReadOnly, Category = "Player")
@@ -155,6 +162,14 @@ public:
 	FVector Camera_InitialLocation;
 	FVector Camera_TargetLocation;
 
+	UPROPERTY(EditAnywhere, Category = "Camera")
+		bool CameraRotateOnLand;
+	UPROPERTY(EditAnywhere, Category = "Camera")
+		bool CameraMoveOnLand;
+
+	FVector Camera_InitialLandLocation;
+	FVector Camera_TargetLandLocation;
+
 	FTimeline CameraWalkTimeline;
 
 	FTimeline CameraJumpTimeline;
@@ -180,7 +195,17 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Camera")
 		bool CameraJumpLoop;
 	
+
+
+	UFUNCTION()
+		void SlowMovementOnLand();
+
+	UFUNCTION()
+		void RemoveLandingSlow();
 private:
+
+	bool resetJumpStartHeight;
+	float JumpStartHeight;
 
 	void SetRegStaminaTrue();
 	 

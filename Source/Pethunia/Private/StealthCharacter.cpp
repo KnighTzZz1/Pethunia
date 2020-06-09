@@ -19,6 +19,8 @@
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 
+#include "Net/UnrealNetwork.h"
+
 #include "Pethunia.h"
 
 #define print(text) if(GEngine) GEngine->AddOnScreenDebugMessage(-1,1.5f,FColor::Green, TEXT(text));
@@ -264,42 +266,24 @@ void AStealthCharacter::SlideCooldownOff()
 
 void AStealthCharacter::Server_Interact_Implementation(AActor* ActorToInteract)
 {
-	//if (ActorToInteract->ActorHasTag(FName(TEXT("Weapon"))))
-	//{
-
-	//	if (*inv.Find(1) == nullptr && *inv.Find(2) == nullptr)
-	//	{
-	//		inv.Add(1, (AGun*)ActorToInteract);
-	//		ActiveWeapon = (AGun*)ActorToInteract;
-	//		SetupAnims();
-	//	}
-	//	else if (*inv.Find(1) == nullptr)
-	//	{
-	//		inv.Add(1, (AGun*)ActorToInteract);
-	//		PutWeaponOnBack(ActorToInteract);
-	//	}
-	//	else if (*inv.Find(2) == nullptr)
-	//	{
-	//		inv.Add(2, (AGun*)ActorToInteract);
-	//		PutWeaponOnBack(ActorToInteract);
-	//	}
-	//	else
-	//	{
-	//		return;
-	//	}
-	//	
-	//}
+	Interact(ActorToInteract);
 }
 
+// FIXME
 void AStealthCharacter::Interact(AActor* ActorToInteract)
 {
+	if (!HasAuthority())
+	{
+		Server_Interact(ActorToInteract);
+	}
 
 	if (ActorToInteract->ActorHasTag(FName(TEXT("Weapon"))))
 	{
 		TryPickingUpWeapon((AGun*)ActorToInteract);
 	}
+	
 }
-
+// FIXME
 void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 {
 	if (weapon->GunOwner) return;
@@ -336,42 +320,28 @@ void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 	}
 }
 
-void AStealthCharacter::Multi_Interact_Implementation(AActor* ActorToInteract)
-{
-	//if (ActorToInteract->ActorHasTag(FName(TEXT("Weapon"))))
-	//{
-
-	//	if (*inv.Find(1) == nullptr && *inv.Find(2) == nullptr)
-	//	{
-	//		inv.Add(1, (AGun*)ActorToInteract);
-	//		ActiveWeapon = (AGun*)ActorToInteract;
-	//		SetupAnims();
-	//	}
-	//	else if (*inv.Find(1) == nullptr)
-	//	{
-	//		inv.Add(1, (AGun*)ActorToInteract);
-	//		PutWeaponOnBack(ActorToInteract);
-	//	}
-	//	else if (*inv.Find(2) == nullptr)
-	//	{
-	//		inv.Add(2, (AGun*)ActorToInteract);
-	//		PutWeaponOnBack(ActorToInteract);
-	//	}
-	//	else
-	//	{
-	//		return;
-	//	}
-	//}
-}
-
 void AStealthCharacter::LMB()
 {
+	if (!HasAuthority())
+	{
+		Server_LMB();
+	}
+
 	if (!ActiveWeapon) return;
 	if (ActiveWeapon->isReloading) return;
 	
 	ActiveWeapon->FireWeapon(Arms);
 }
 
+void AStealthCharacter::Server_LMB_Implementation()
+{
+	LMB();
+}
+
+bool AStealthCharacter::Server_LMB_Validate()
+{
+	return true;
+}
 
 void AStealthCharacter::LMB_Released()
 {
@@ -388,13 +358,33 @@ void AStealthCharacter::ChangeFireMode()
 
 void AStealthCharacter::Reload()
 {
+	if (!HasAuthority())
+	{
+		Server_Reload();
+	}
+
 	if (!ActiveWeapon) return;
 	ActiveWeapon->ReloadWeapon(Arms);
 }
 
+void AStealthCharacter::Server_Reload_Implementation()
+{
+	Reload();
+}
+
+bool AStealthCharacter::Server_Reload_Validate()
+{
+	return true;
+}
+
+
+// FIXME
 void AStealthCharacter::DropWeapon()
 {
-
+	if (!HasAuthority())
+	{
+		Server_DropWeapon();
+	}
 
 	if (!ActiveWeapon) return; // If I don't have anything equiped, then I can't drop anything.
 
@@ -412,7 +402,7 @@ void AStealthCharacter::DropWeapon()
 	}
 
 	ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
-	
+
 	ActiveWeapon->UpdateGunPosition();
 	ActiveWeapon->GunOwner = nullptr;
 	ActiveWeapon->Owner_Camera = nullptr;
@@ -420,46 +410,25 @@ void AStealthCharacter::DropWeapon()
 	
 }
 
+// FIXME
 void AStealthCharacter::Server_DropWeapon_Implementation()
 {
-	// if (*inv.Find(1) == ActiveWeapon)
-	// {
-	// 	inv.Add(1, nullptr);
-	// 	ClearAnims();
-	// }
-	// else
-	// {
-	// 	inv.Add(2, nullptr);
-	// 	ClearAnims();
-	// }
-
-	// ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
-
-	// ActiveWeapon = nullptr; // Unequipe the gun
+	DropWeapon();
 }
 
-void AStealthCharacter::Multi_DropWeapon_Implementation()
+bool AStealthCharacter::Server_DropWeapon_Validate()
 {
-	// if (!ActiveWeapon) return; // If I don't have anything equiped, then I can't drop anything.
-
-	// if (*inv.Find(1) == ActiveWeapon)
-	// {
-	// 	inv.Add(1, nullptr);
-	// 	ClearAnims();
-	// }
-	// else
-	// {
-	// 	inv.Add(2, nullptr);
-	// 	ClearAnims();
-	// }
-
-	// ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
-
-	// ActiveWeapon = nullptr; // Unequipe the gun
+	return true;
 }
 
+
+// FIXME
 void AStealthCharacter::EquipPrimary()
 {
+	if (!HasAuthority())
+	{
+		Server_EquipPrimary();
+	}
 
 	if (*inv.Find(1) == nullptr)
 	{
@@ -472,44 +441,26 @@ void AStealthCharacter::EquipPrimary()
 	}
 
 	if (ActiveWeapon == *inv.Find(1)) return;
-	
+
 	ActiveWeapon = *inv.Find(1);
 	SetupAnims();
 	if (*inv.Find(2) == nullptr) return;
 	PutWeaponOnBack(*inv.Find(2));
 
 }
-
+// FIXME
 void AStealthCharacter::Server_EquipPrimary_Implementation()
 {
-	// if (*inv.Find(1) == nullptr)
-	// {
-	// 	return;
-	// }
-	// if (ActiveWeapon == *inv.Find(1)) return;
-	// ActiveWeapon = *inv.Find(1);
-	// SetupAnims();
-	// if (*inv.Find(2) == nullptr) return;
-	// PutWeaponOnBack(*inv.Find(2));
+	EquipPrimary();
 }
 
-void AStealthCharacter::Multi_EquipPrimary_Implementation()
-{
-	// if (*inv.Find(1) == nullptr)
-	// {
-	// 	print("No primary weapon");
-	// 	return;
-	// }
-	// if (ActiveWeapon == *inv.Find(1)) return;
-	// ActiveWeapon = *inv.Find(1);
-	// SetupAnims();
-	// if (*inv.Find(2) == nullptr) return;
-	// PutWeaponOnBack(*inv.Find(2));
-}
-
+// FIXME
 void AStealthCharacter::EquipSecondary()
 {
-	
+	if (!HasAuthority())
+	{
+		Server_EquipSecondary();
+	}
 	if (*inv.Find(2) == nullptr)
 	{
 		print("No secondary weapon");
@@ -519,44 +470,24 @@ void AStealthCharacter::EquipSecondary()
 	{
 		if (ActiveWeapon->isFiring || ActiveWeapon->isReloading) return;
 	}
-	
+
 	if (ActiveWeapon == *inv.Find(2)) return;
 
 	ActiveWeapon = *inv.Find(2);
+
 	SetupAnims();
-	
+
 	if (*inv.Find(1) == nullptr) return;
 	PutWeaponOnBack(*inv.Find(1));
-
+	
 }
-
+// FIXME
 void AStealthCharacter::Server_EquipSecondary_Implementation()
 {
-	// if (*inv.Find(2) == nullptr)
-	// {
-	// 	return;
-	// }
-	// if (ActiveWeapon == *inv.Find(2)) return;
-	// ActiveWeapon = *inv.Find(2);
-	// SetupAnims();
-
-	// if (*inv.Find(1) == nullptr) return;
-	// PutWeaponOnBack(*inv.Find(1));
+	EquipSecondary();
 }
 
-void AStealthCharacter::Multi_EquipSecondary_Implementation()
-{
-	// if (*inv.Find(2) == nullptr)
-	// {
-	// 	return;
-	// }
-	// if (ActiveWeapon == *inv.Find(2)) return;
-	// ActiveWeapon = *inv.Find(2);
-	// SetupAnims();
 
-	// if (*inv.Find(1) == nullptr) return;
-	// PutWeaponOnBack(*inv.Find(1));
-}
 
 void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
@@ -568,17 +499,18 @@ void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	PlayerInputComponent->BindAction("ChangeFireMode", IE_Pressed, this, &AStealthCharacter::ChangeFireMode);
 }
 
+void AStealthCharacter::GetLifetimeReplicatedProps(TArray < FLifetimeProperty > & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AStealthCharacter, ActiveWeapon);
+}
+
 //---------------------- T O D O -----------------------//
 /*
-	Add Camera Shake for:
-		Walking [+]
-		Running [-]
-		Jumping [+]
-		Landing [+]
-		Sliding [+]
-		Shooting [-]
-		Crouching [+]
-
+	
+	StealthCharacter Networking Support
+		[FIX - Equip]
 	Gun Idle State FX
 */
 
@@ -588,4 +520,6 @@ void AStealthCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 	Gun Idle State Animations - DONE
 
 	Gun PickUp when Overlapping - DONE
+
+	Add Camera Shakes - DONE
 */
