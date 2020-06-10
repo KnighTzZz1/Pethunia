@@ -144,7 +144,6 @@ void APlayerCharacter::BeginPlay()
 void APlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	
 	if (RegStamina && CurrentStamina < MaxStamina)
 	{
 		CurrentStamina += StaminaRegenMultiplier;
@@ -240,29 +239,27 @@ void APlayerCharacter::LookVertical(float Value)
 }
 
 
-void APlayerCharacter::SlowMovementOnLand(float delta)
+void APlayerCharacter::SlowMovementOnLand()
 {
-	float pass = delta;
-	GetCharacterMovement()->MaxWalkSpeed -= pass * SlowAmmoundOnLand;
+	GetCharacterMovement()->MaxWalkSpeed -= SlowAmmoundOnLand;
 	FTimerHandle LandingTimer;
-	FTimerDelegate LandDelegate = FTimerDelegate::CreateUObject(this, &APlayerCharacter::RemoveLandingSlow, pass);
-	GetWorldTimerManager().SetTimer(LandingTimer, LandDelegate, LandingSlowDuration, false);
+	GetWorldTimerManager().SetTimer(LandingTimer, this, &APlayerCharacter::RemoveLandingSlow, LandingSlowDuration, false);
 }
 
-void APlayerCharacter::RemoveLandingSlow(float pass)
+void APlayerCharacter::RemoveLandingSlow()
 {
 	UE_LOG(LogTemp, Warning, TEXT("REMOVED SLOW"));
-	GetCharacterMovement()->MaxWalkSpeed += pass * SlowAmmoundOnLand;
+	GetCharacterMovement()->MaxWalkSpeed += SlowAmmoundOnLand;
 }
 
 void APlayerCharacter::Landed(const FHitResult & Hit)
 {
 	Super::Landed(Hit);
 	UE_LOG(LogTemp, Warning, TEXT("ADDED SLOW"));
+	SlowMovementOnLand();
 
 	resetJumpStartHeight = true;
 	float LandHeight = GetGameTimeSinceCreation();
-	SlowMovementOnLand(LandHeight - JumpStartHeight);
 
 
 	Camera_TargetLandLocation = FVector::ZeroVector + FVector(0, 0, CameraLandOffset * (LandHeight - JumpStartHeight));
@@ -273,15 +270,20 @@ void APlayerCharacter::Landed(const FHitResult & Hit)
 
 void APlayerCharacter::Server_Jump_Implementation()
 {
-	Jump();
+	if (IsOnLadder)
+	{
+		FVector Distance = GetActorLocation() - CurrentLadderLocation;
+		FVector Direction = FVector(Distance.X, Distance.Y, 0);
+		APlayerCharacter::LaunchCharacter(Direction.GetSafeNormal() * 1000, false, true);
+	}
+	else if (GetCharacterMovement()->IsMovingOnGround())
+	{
+		APlayerCharacter::LaunchCharacter(FVector(0.f, 0.f, JumpHeight), false, true);
+	}
 }
 
 void APlayerCharacter::Jump()
 {
-	if (!HasAuthority())
-	{
-		Server_Jump();
-	}
 	
 	if (IsOnLadder)
 	{
@@ -294,6 +296,7 @@ void APlayerCharacter::Jump()
 		APlayerCharacter::LaunchCharacter(FVector(0.f, 0.f, JumpHeight), false, true);
 		CameraJumpTimeline.PlayFromStart();
 	}
+	Server_Jump();
 }
 
 void APlayerCharacter::SetRegStaminaTrue()
@@ -303,36 +306,44 @@ void APlayerCharacter::SetRegStaminaTrue()
 
 void APlayerCharacter::Server_SprintStart_Implementation()
 {
-	SprintStart();
+	if (CurrentStamina <= 0) return;
+	GetWorldTimerManager().ClearTimer(StaminaRechargeTimer);
+	IsRunning = true;
+	RegStamina = false;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed * SprintSpeedMultiplier;
 }
 
 void APlayerCharacter::SprintStart()
 {
-	if (!HasAuthority())
-	{
-		Server_SprintStart();
-	}
-
 	if (CurrentStamina <= 0) return;
 	GetWorldTimerManager().ClearTimer(StaminaRechargeTimer);
 	IsRunning = true;
 	RegStamina = false;
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed * SprintSpeedMultiplier;
 
+	// Camera Shake
+	//Camera_TargetLocation += FVector(CameraOffset, 0, 0);
+
+	//Server_SprintStart();
 }
 
 void APlayerCharacter::Server_SprintStop_Implementation()
 {
-	SprintStop();
+	IsRunning = false;
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
+	GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::SetRegStaminaTrue, StaminaWaitTime, false);
 }
 
 void APlayerCharacter::SprintStop()
 {
-	if (!HasAuthority())
-		Server_SprintStop();
 	IsRunning = false;
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	GetWorldTimerManager().SetTimer(StaminaRechargeTimer, this, &APlayerCharacter::SetRegStaminaTrue, StaminaWaitTime, false);
+	
+	//Camera Shake
+	//Camera_TargetLocation -= FVector(CameraOffset, 0, 0);
+
+	//Server_SprintStop();
 }
 
 

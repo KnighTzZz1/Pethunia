@@ -198,10 +198,10 @@ public:
 
 
 	UFUNCTION()
-		void SlowMovementOnLand(float delta);
+		void SlowMovementOnLand();
 
 	UFUNCTION()
-		void RemoveLandingSlow(float pass);
+		void RemoveLandingSlow();
 private:
 
 	bool resetJumpStartHeight;
