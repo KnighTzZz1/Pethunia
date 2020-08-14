@@ -20,7 +20,7 @@ protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HealthComponent")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "HealthComponent")
 		float Health;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HealthComponent")
 		float MaxHealth;
@@ -29,5 +29,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void TakeDamage(float damage);
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 };
 

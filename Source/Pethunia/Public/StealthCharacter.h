@@ -11,9 +11,9 @@ class UCharacterMovementComponent;
 class UCurveFloat;
 class AGun;
 class USkeletalMeshComponent;
-/**
- * 
- */
+
+
+
 UCLASS()
 class PETHUNIA_API AStealthCharacter : public APlayerCharacter
 {
@@ -55,6 +55,11 @@ public:
 	virtual void LMB() override;
 	virtual void Reload() override;
 	virtual void DropWeapon() override;
+
+	virtual void Die() override;
+
+	UFUNCTION(Server, reliable)
+		void Server_Die();
 
 	UFUNCTION(Server, reliable, WithValidation)
 		void Server_LMB();
@@ -147,6 +152,7 @@ public:
 
 	UFUNCTION()
 		void TryPickingUpWeapon(AGun* weapon);
+
 
 private:
 

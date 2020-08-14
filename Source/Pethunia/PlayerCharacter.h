@@ -48,6 +48,8 @@ public:
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	FTimerHandle StaminaRechargeTimer;
 
+	virtual void Die() {};
+
 protected:
 	bool isSliding;
 
@@ -86,6 +88,8 @@ protected:
 	virtual void LMB() {};
 	virtual void Reload() {};
 	virtual void DropWeapon() {};
+
+	
 
 	UFUNCTION()
 		void TryToInteract();

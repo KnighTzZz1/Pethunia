@@ -80,6 +80,7 @@ void APlayerCharacter::OverlapBeginEvent(class UPrimitiveComponent* OverlappedCo
 	{
 		if (OtherActor->ActorHasTag(FName(TEXT("Ladder"))))
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Miekari Ladders"));
 			IsOnLadder = true;
 			GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);
 			CurrentLadderLocation = OtherActor->GetActorLocation();
@@ -342,7 +343,11 @@ void APlayerCharacter::TryToInteract()
 	FVector Start = Camera->GetComponentLocation();
 	FVector End = Start + Camera->GetForwardVector() * InteractionDistance;
 	
-	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End,ECollisionChannel::ECC_Visibility);
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(this);
+	CollisionParams.bTraceComplex = true;
+
+	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End,ECollisionChannel::ECC_Visibility, CollisionParams);
 	if (hasHit)
 	{
 		AActor* HitActor = Hit.GetActor();

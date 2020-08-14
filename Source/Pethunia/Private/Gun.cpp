@@ -13,6 +13,7 @@
 #include "PlayerHealthComponent.h"
 #include "Pethunia.h"
 #include "StealthCharacter.h"
+#include "UnrealNetwork.h"
 
 
 
@@ -78,7 +79,7 @@ void AGun::Tick(float DeltaTime)
 	if (!GunOwner)
 	{
 		
-		IdleTimeline.TickTimeline(DeltaTime);
+		//IdleTimeline.TickTimeline(DeltaTime);
 	}
 	GunShakeTimeline.TickTimeline(DeltaTime);
 }
@@ -132,8 +133,12 @@ void AGun::FireWeaponSingle(USkeletalMeshComponent* PlayerArms)
 
 	FHitResult Hit;
 
-	// Action
-	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_GameTraceChannel1);
+	FCollisionQueryParams CollisionParams;
+	CollisionParams.AddIgnoredActor(GunOwner);
+	CollisionParams.AddIgnoredActor(this);
+	CollisionParams.bTraceComplex = true;
+	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_Visibility, CollisionParams);
+
 	if (hasHit)
 	{
 		DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Green, false, 2, false);
@@ -193,7 +198,10 @@ void AGun::FireWeaponAuto(USkeletalMeshComponent* PlayerArms)
 	FHitResult Hit;
 
 	FCollisionQueryParams CollisionParams;
-	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_GameTraceChannel1, CollisionParams);
+	CollisionParams.AddIgnoredActor(GunOwner);
+	CollisionParams.AddIgnoredActor(this);
+	CollisionParams.bTraceComplex = true;
+	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_Visibility, CollisionParams);
 
 	if (hasHit)
 	{
@@ -204,8 +212,6 @@ void AGun::FireWeaponAuto(USkeletalMeshComponent* PlayerArms)
 			DrawDebugString(GetWorld(), Hit.ImpactPoint, FString::SanitizeFloat(BulletDamage), nullptr, FColor::White, 0.5f, true);
 			HitComponent->TakeDamage(BulletDamage);
 		}
-		
-		
 	} 
 	else
 	{
@@ -306,4 +312,30 @@ void AGun::HandleGunShootProgress(float value)
 void AGun::UpdateGunRecoil()
 {
 
+}
+
+void AGun::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const 
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AGun, CurrentAmmo);
+	DOREPLIFETIME(AGun, NumberOfMagazines);
+	DOREPLIFETIME_CONDITION(AGun, DropLocation, COND_SkipOwner);
+}
+
+void AGun::OnRep_Drop()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Update On Drop"));
+	SetActorLocation(DropLocation.endLocation);
+}
+
+void AGun::UpdateGunDropLocation(FVector value)
+{
+	DropLocation.endLocation = value;
+}
+
+void AGun::RemoveOwnership()
+{
+	GunOwner = nullptr;
+	Owner_Camera = nullptr;
 }

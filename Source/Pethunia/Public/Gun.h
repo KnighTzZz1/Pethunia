@@ -18,6 +18,17 @@ class UAnimMontage;
 class UCameraComponent;
 
 
+USTRUCT()
+struct FDropLocation
+{
+	GENERATED_BODY();
+
+public:
+	UPROPERTY()
+		FVector_NetQuantize endLocation;
+};
+
+
 UENUM(BlueprintType)
 enum class FireMode : uint8
 {
@@ -53,9 +64,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0", ClampMax = "50"))
 		int MaxAmmo;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "Gun")
 		int CurrentAmmo;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0", ClampMax = "10"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "Gun", meta = (ClampMin = "0", ClampMax = "10"))
 		int NumberOfMagazines;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0.0", ClampMax = "50000"))
 		float ShootDistance;
@@ -105,10 +116,13 @@ public:
 	bool isReloading;
 	bool isFiring;
 
-	AActor* GunOwner;
+	UPROPERTY(BlueprintReadOnly)
+		AActor* GunOwner;
 	
 	UFUNCTION()
 		void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	// For Idle Animations
 	FTimeline IdleTimeline;
@@ -138,6 +152,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun")
 		float HipFire;
 	UCameraComponent* Owner_Camera;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Drop)
+		FDropLocation DropLocation;
+
+	UFUNCTION()
+		void OnRep_Drop();
+
+	UFUNCTION()
+		void RemoveOwnership();
+	UFUNCTION()
+		void UpdateGunDropLocation(FVector value);
 
 private:
 	FRotator Camera_InitialRotation;

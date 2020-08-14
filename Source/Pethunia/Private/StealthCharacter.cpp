@@ -73,18 +73,17 @@ void AStealthCharacter::Tick(float DeltaTime)
 
 void AStealthCharacter::Server_DashAbility_Implementation()
 {
-	if (EnergyComponent->CurrentEnergy >= DashCost && !DashIsOnCooldown)
-	{
-		EnergyComponent->UseEnergy(DashCost);
-		FVector Direction = Camera->GetForwardVector() * DashSpeed;
-		GetCharacterMovement()->Launch(Direction);
-		DashIsOnCooldown = true;
-		GetWorldTimerManager().SetTimer(DashHandle, this, &AStealthCharacter::StopMovement, DashStopTime, false);
-	}
+	DashAbility();
 }
 
 void AStealthCharacter::DashAbility()
 {
+	if (!HasAuthority())
+	{
+		Server_DashAbility();
+		return;
+	}
+	
 	if (EnergyComponent->CurrentEnergy >= DashCost && !DashIsOnCooldown)
 	{
 		EnergyComponent->UseEnergy(DashCost);
@@ -93,7 +92,6 @@ void AStealthCharacter::DashAbility()
 		DashIsOnCooldown = true;
 		GetWorldTimerManager().SetTimer(DashHandle, this, &AStealthCharacter::StopMovement, DashStopTime, false);
 	}
-	Server_DashAbility();
 }
 
 void AStealthCharacter::StopMovement()
@@ -293,6 +291,7 @@ void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 		inv.Add(1, weapon);
 		ActiveWeapon = weapon;
 		ActiveWeapon->GunOwner = this;
+		UE_LOG(LogTemp, Warning, TEXT("Owner: %s"), *this->GetName());
 		ActiveWeapon->Owner_Camera = Camera;
 		SetupAnims();
 	}
@@ -383,9 +382,9 @@ void AStealthCharacter::DropWeapon()
 {
 	if (!HasAuthority())
 	{
-		Server_DropWeapon();
+		Server_DropWeapon();	
+		
 	}
-
 	if (!ActiveWeapon) return; // If I don't have anything equiped, then I can't drop anything.
 
 	if (ActiveWeapon->isFiring || ActiveWeapon->isReloading) return;
@@ -400,15 +399,22 @@ void AStealthCharacter::DropWeapon()
 		inv.Add(2, nullptr);
 		ClearAnims();
 	}
-
+	
 	ActiveWeapon->SetActorLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
 
-	ActiveWeapon->UpdateGunPosition();
-	ActiveWeapon->GunOwner = nullptr;
-	ActiveWeapon->Owner_Camera = nullptr;
+
+	if (HasAuthority())
+	{
+		ActiveWeapon->UpdateGunDropLocation(Camera->GetComponentLocation() + Camera->GetForwardVector() * 100);
+	}
+
+
+	//ActiveWeapon->UpdateGunPosition();
+	ActiveWeapon->RemoveOwnership();
 	ActiveWeapon = nullptr; // Unequipe the gun
 	
 }
+
 
 // FIXME
 void AStealthCharacter::Server_DropWeapon_Implementation()
@@ -504,6 +510,24 @@ void AStealthCharacter::GetLifetimeReplicatedProps(TArray < FLifetimeProperty > 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	DOREPLIFETIME(AStealthCharacter, ActiveWeapon);
+
+	
+}
+
+
+void AStealthCharacter::Server_Die_Implementation()
+{
+	Die();
+}
+
+void AStealthCharacter::Die()
+{
+	if (!HasAuthority())
+	{
+		Server_Die();
+	}
+
+	this->Destroy();
 }
 
 //---------------------- T O D O -----------------------//

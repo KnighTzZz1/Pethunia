@@ -2,11 +2,14 @@
 
 
 #include "PlayerHealthComponent.h"
-
+#include "UnrealNetwork.h"
+#include "PlayerCharacter.h"
 
 // Sets default values for this component's properties
 UPlayerHealthComponent::UPlayerHealthComponent()
 {
+	SetIsReplicated(true);
+
 	MaxHealth = 100.f;
 	Health = MaxHealth;
 }
@@ -24,7 +27,21 @@ void UPlayerHealthComponent::TakeDamage(float damage)
 	Health -= damage;
 	if(Health <= 0)
 	{
-		GetOwner()->Destroy();
+		if (GetOwner()->ActorHasTag(FName(TEXT("Player"))))
+		{
+			APlayerCharacter* Player = (APlayerCharacter*)GetOwner();
+			Player->Die();
+		}
+		else
+		{
+			GetOwner()->Destroy();
+		}
 	}
 }
 
+
+void UPlayerHealthComponent::GetLifetimeReplicatedProps(TArray < FLifetimeProperty > & OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(UPlayerHealthComponent, Health);
+}

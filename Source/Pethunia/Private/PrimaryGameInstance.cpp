@@ -18,7 +18,7 @@ void UPrimaryGameInstance::Host()
 	UWorld* World = GetWorld();
 	if (!ensure(World != nullptr)) return;
 
-	World->ServerTravel("/Game/Level/Landscape?listen");
+	World->ServerTravel("/Game/Level/CodeMap?listen");
 }
 
 void UPrimaryGameInstance::Join(const FString& Address)
