@@ -39,6 +39,11 @@ void UPlayerHealthComponent::TakeDamage(float damage)
 	}
 }
 
+void UPlayerHealthComponent::_Experimental_SetHealth(float value)
+{
+	Health = value;
+}
+
 
 void UPlayerHealthComponent::GetLifetimeReplicatedProps(TArray < FLifetimeProperty > & OutLifetimeProps) const
 {

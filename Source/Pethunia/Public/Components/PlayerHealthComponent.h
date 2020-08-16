@@ -26,6 +26,8 @@ protected:
 		float MaxHealth;
 
 public:
+	UFUNCTION(BlueprintCallable)
+		void _Experimental_SetHealth(float value);
 
 	UFUNCTION(BlueprintCallable)
 		void TakeDamage(float damage);
