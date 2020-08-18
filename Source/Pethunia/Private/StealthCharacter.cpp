@@ -284,20 +284,19 @@ void AStealthCharacter::Interact(AActor* ActorToInteract)
 // FIXME
 void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 {
+	
 	if (weapon->GunOwner) return;
+	
 	if (*inv.Find(1) == nullptr && *inv.Find(2) == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No Weapon"));
 		inv.Add(1, weapon);
 		ActiveWeapon = weapon;
 		ActiveWeapon->GunOwner = this;
-		UE_LOG(LogTemp, Warning, TEXT("Owner: %s"), *this->GetName());
 		ActiveWeapon->Owner_Camera = Camera;
 		SetupAnims();
 	}
 	else if (*inv.Find(1) == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No Primary"));
 		inv.Add(1, weapon);
 		weapon->GunOwner = this;
 		weapon->Owner_Camera = Camera;
@@ -305,16 +304,14 @@ void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 	}
 	else if (*inv.Find(2) == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No Secondary"));
 		inv.Add(2, weapon);
-
 		weapon->GunOwner = this;
 		weapon->Owner_Camera = Camera;
 		PutWeaponOnBack(weapon);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Both Weapons"));
+		UE_LOG(LogTemp, Warning, TEXT("Orive Gijiravs Shechema"));
 		return;
 	}
 }
@@ -434,6 +431,7 @@ void AStealthCharacter::EquipPrimary()
 	if (!HasAuthority())
 	{
 		Server_EquipPrimary();
+		
 	}
 
 	if (*inv.Find(1) == nullptr)
@@ -466,6 +464,7 @@ void AStealthCharacter::EquipSecondary()
 	if (!HasAuthority())
 	{
 		Server_EquipSecondary();
+		
 	}
 	if (*inv.Find(2) == nullptr)
 	{
@@ -526,7 +525,9 @@ void AStealthCharacter::Die()
 	{
 		Server_Die();
 	}
-
+	
+	if (*inv.Find(1) != nullptr) (*inv.Find(1))->GunOwner = nullptr;
+	if (*inv.Find(2) != nullptr) (*inv.Find(2))->GunOwner = nullptr;
 	this->Destroy();
 }
 
