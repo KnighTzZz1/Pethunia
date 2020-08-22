@@ -246,7 +246,6 @@ void AGun::FireWeaponAuto(USkeletalMeshComponent* PlayerArms)
 void AGun::StopFire()
 {
 	Clicked = false;
-	
 }
 
 void AGun::ReloadWeapon(USkeletalMeshComponent * PlayerArms)

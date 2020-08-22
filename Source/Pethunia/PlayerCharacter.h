@@ -45,10 +45,14 @@ public:
 	virtual void Landed(const FHitResult & Hit) override;
 
 	void Tick(float DeltaTime) override;
+
+	
+
 	void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	FTimerHandle StaminaRechargeTimer;
 
 	virtual void Die() {};
+	
 
 protected:
 	bool isSliding;

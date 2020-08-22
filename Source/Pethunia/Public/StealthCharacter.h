@@ -57,6 +57,11 @@ public:
 	virtual void DropWeapon() override;
 
 	virtual void Die() override;
+	
+	virtual void BeginDestroy() override;
+
+	UFUNCTION(Server, reliable)
+		void Server_OnDestroy();
 
 	UFUNCTION(Server, reliable)
 		void Server_Die();
@@ -134,6 +139,9 @@ public:
 		void ClearAnims();
 	UFUNCTION(BlueprintImplementableEvent)
 		void PutWeaponOnBack(AActor* Weapon);
+
+	UFUNCTION(BlueprintImplementableEvent)
+		void BeforeDeath();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Weapons")
 		AGun* ActiveWeapon;

@@ -20,7 +20,8 @@
 #include "Animation/AnimMontage.h"
 
 #include "Net/UnrealNetwork.h"
-
+#include "Kismet/GameplayStatics.h"
+#include "DeathMatch.h"
 #include "Pethunia.h"
 
 #define print(text) if(GEngine) GEngine->AddOnScreenDebugMessage(-1,1.5f,FColor::Green, TEXT(text));
@@ -406,7 +407,7 @@ void AStealthCharacter::DropWeapon()
 	}
 
 
-	//ActiveWeapon->UpdateGunPosition();
+	
 	ActiveWeapon->RemoveOwnership();
 	ActiveWeapon = nullptr; // Unequipe the gun
 	
@@ -526,9 +527,28 @@ void AStealthCharacter::Die()
 		Server_Die();
 	}
 	
-	if (*inv.Find(1) != nullptr) (*inv.Find(1))->GunOwner = nullptr;
-	if (*inv.Find(2) != nullptr) (*inv.Find(2))->GunOwner = nullptr;
+	BeforeDeath();
+	if (*inv.Find(1) != nullptr) (*inv.Find(1))->RemoveOwnership();
+	if (*inv.Find(2) != nullptr) (*inv.Find(2))->RemoveOwnership();
+	ActiveWeapon = nullptr;
 	this->Destroy();
+}
+
+void AStealthCharacter::Server_OnDestroy_Implementation()
+{
+	ADeathMatch* gamemode = (ADeathMatch*)GetWorld()->GetAuthGameMode();
+	
+	//gamemode->OnPlayerDeath();
+}
+
+void AStealthCharacter::BeginDestroy()
+{
+	Super::BeginDestroy();
+
+	if (!HasAuthority())
+	{
+		Server_OnDestroy();
+	}
 }
 
 //---------------------- T O D O -----------------------//
