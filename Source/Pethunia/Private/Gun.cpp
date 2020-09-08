@@ -98,25 +98,48 @@ void AGun::UpdateCanClick()
 
 void AGun::FireWeapon(USkeletalMeshComponent* PlayerArms)
 {
+	if (HasAuthority())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Server Dude"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Client Dude"));
+	}
+
 	if (!CanClick) return;
 	Clicked = true;
 	isFiring = true;
+	CanClick = false;
 	if (WeaponFireMode == FireMode::MODE_Single)
 	{
-		CanClick = false;
 		FireWeaponSingle(PlayerArms);
 		FTimerHandle CanClickHandle;
 		GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
 	}
 	else if (WeaponFireMode == FireMode::MODE_Auto)
 	{
-		CanClick = false;
-		FireWeaponAuto(PlayerArms);
+		
+		
+		if (Role < ROLE_Authority)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Trying to execute Server_ProccessWeaponFire"));
+			Server_ProccessWeaponFire();
+		}
+
+
 	}
 	else if (WeaponFireMode == FireMode::MODE_Burst)
 	{
 
 	}
+}
+
+void AGun::Server_ProccessWeaponFire_Implementation()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Reached Server_ProccessWeaponFire"));
+	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AGun::FireWeaponAuto);
+	GetWorldTimerManager().SetTimer(ShootHandle, ShootDelegate, RateOfFire, true);
 }
 
 void AGun::FireWeaponSingle(USkeletalMeshComponent* PlayerArms)
@@ -173,13 +196,14 @@ void AGun::FireWeaponSingle(USkeletalMeshComponent* PlayerArms)
 	GunShakeTimeline.PlayFromStart();
 }
 
-void AGun::FireWeaponAuto(USkeletalMeshComponent* PlayerArms)
+void AGun::FireWeaponAuto()
 {
 	
-	if (Clicked == false || CurrentAmmo <= 0)
+	if (!Clicked || CurrentAmmo <= 0)
 	{
 		FTimerHandle CanClickHandle;
 		GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
+		GetWorldTimerManager().ClearTimer(ShootHandle);
 		return;
 	}
 	
@@ -202,7 +226,7 @@ void AGun::FireWeaponAuto(USkeletalMeshComponent* PlayerArms)
 	CollisionParams.AddIgnoredActor(this);
 	CollisionParams.bTraceComplex = true;
 	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_Visibility, CollisionParams);
-
+	UE_LOG(LogTemp, Warning, TEXT("Bullet Shot"));
 	if (hasHit)
 	{
 		DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Green, false, 2, false);
@@ -218,35 +242,11 @@ void AGun::FireWeaponAuto(USkeletalMeshComponent* PlayerArms)
 		DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2, false);
 	}
 	CurrentAmmo--;
-
-	// Animations
-	if (ArmsFire01Animation == nullptr || ArmsFire02Animation == nullptr || WeaponFire01Animation == nullptr || WeaponFire02Animation == nullptr) return;
-
-	if (FMath::RandRange(1, 2) == 1)
-	{
-
-		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-	}
-	else
-	{
-		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-	}
-
-	GunShakeTimeline.PlayFromStart();
-
-	// Recursive Call
-	FTimerHandle ShootHandle;
-	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AGun::FireWeaponAuto, PlayerArms);
-
-	GetWorldTimerManager().SetTimer(ShootHandle, ShootDelegate, RateOfFire, false);
 }
 
 void AGun::StopFire()
 {
 	Clicked = false;
-	
 }
 
 void AGun::ReloadWeapon(USkeletalMeshComponent * PlayerArms)

@@ -105,7 +105,16 @@ public:
 	
 	void FireWeaponSingle(USkeletalMeshComponent* PlayerArms);
 	void FireWeaponBurst();
-	void FireWeaponAuto(USkeletalMeshComponent* PlayerArms);
+
+	UFUNCTION(Server, reliable)
+		void Server_ProccessWeaponFire();
+
+
+
+	void FireWeaponAuto();
+
+	void ShootBullet(USkeletalMeshComponent* PlayerArms);
+	
 	void FireWeapon(USkeletalMeshComponent* PlayerArms);
 	void StopFire();
 
@@ -123,6 +132,8 @@ public:
 		void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	FTimerHandle ShootHandle;
 
 	// For Idle Animations
 	FTimeline IdleTimeline;
@@ -163,6 +174,8 @@ public:
 		void RemoveOwnership();
 	UFUNCTION()
 		void UpdateGunDropLocation(FVector value);
+
+
 
 private:
 	FRotator Camera_InitialRotation;

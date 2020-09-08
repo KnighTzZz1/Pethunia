@@ -26,7 +26,10 @@ APlayerCharacter::APlayerCharacter()
 
 	HealthComponent = CreateDefaultSubobject<UPlayerHealthComponent>(TEXT("Player Health Component"));
 	EnergyComponent = CreateDefaultSubobject<UPlayerEnergyComponent>(TEXT("Player Energy Component"));
+	HealthComponent->RegisterComponent();
+	EnergyComponent->RegisterComponent();
 	this->AddInstanceComponent(EnergyComponent);
+	this->AddInstanceComponent(HealthComponent);
 
 	TriggerCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Trigger Component"));
 	TriggerCapsule->InitCapsuleSize(34.f, 88.f);

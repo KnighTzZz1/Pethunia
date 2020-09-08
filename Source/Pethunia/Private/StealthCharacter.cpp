@@ -319,11 +319,6 @@ void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 
 void AStealthCharacter::LMB()
 {
-	if (!HasAuthority())
-	{
-		Server_LMB();
-	}
-
 	if (!ActiveWeapon) return;
 	if (ActiveWeapon->isReloading) return;
 	
