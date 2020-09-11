@@ -50,17 +50,10 @@ public:
 		USceneComponent* Root;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Base")
 		USkeletalMeshComponent* GunMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Base")
+		USkeletalMeshComponent* PlayerArms;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Base")
 		UBoxComponent* GunCollission;
-
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0", ClampMax = "50"))
 		int MaxAmmo;
@@ -81,9 +74,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun", meta = (ClampMin = "0.0", ClampMax = "300.0"))
 		float BulletSpreadRadius;
 
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
 		FName GunName;
-	
+
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
 		UAnimMontage* ArmsReloadAnimation;
@@ -98,25 +92,67 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun Animations")
 		UAnimMontage* WeaponFire02Animation;
 
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
 		FireMode WeaponFireMode;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Gun")
 		EAmmoType AmmoType;
-	
-	void FireWeaponSingle(USkeletalMeshComponent* PlayerArms);
+
+	UPROPERTY(BlueprintReadOnly)
+		AActor* GunOwner;
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun")
+		float HipFire;
+	UCameraComponent* Owner_Camera;
+
+	UPROPERTY(ReplicatedUsing = OnRep_Drop)
+		FDropLocation DropLocation;
+
+	FTimeline GunShakeTimeline;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		UCurveFloat* GunFireCurve;
+
+	FTimerHandle ShootHandle;
+
+	// For Idle Animations
+	FTimeline IdleTimeline;
+
+	UPROPERTY(EditAnywhere)
+		float IdleOffset;
+	UPROPERTY(EditAnywhere)
+		UCurveFloat* GunFloatingCurve;
+
+
+protected:
+	// Called when the game starts or when spawned
+	virtual void BeginPlay() override;
+
+public:	
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(NetMulticast, Reliable)
+		void PlayShootingAnimations();
+
+	void FireWeaponSingle();
 	void FireWeaponBurst();
 
 	UFUNCTION(Server, reliable)
-		void Server_ProccessWeaponFire();
+		void Server_ProccessWeaponAutoFire();
 
+	UFUNCTION(Server, reliable)
+		void Server_ProccessWeaponSingleFire();
 
 
 	void FireWeaponAuto();
-
-	void ShootBullet(USkeletalMeshComponent* PlayerArms);
 	
-	void FireWeapon(USkeletalMeshComponent* PlayerArms);
+	void FireWeapon();
 	void StopFire();
+	
+	UFUNCTION(Server, reliable)
+		void Server_StopFire();
 
 	void ReloadWeapon(USkeletalMeshComponent* PlayerArms);
 	void ChangeFireMode();
@@ -125,47 +161,23 @@ public:
 	bool isReloading;
 	bool isFiring;
 
-	UPROPERTY(BlueprintReadOnly)
-		AActor* GunOwner;
+
 	
 	UFUNCTION()
 		void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	FTimerHandle ShootHandle;
 
-	// For Idle Animations
-	FTimeline IdleTimeline;
-	
-	UPROPERTY(EditAnywhere)
-		float IdleOffset;
-	UPROPERTY(EditAnywhere)
-		UCurveFloat* GunFloatingCurve;
 	UFUNCTION()
 		void HandleGunFloatingProgress(float value);
 
 	void UpdateGunPosition();
 
-	// CameraShakes For Shooting
-
-	FTimeline GunShakeTimeline;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		UCurveFloat* GunFireCurve;
-	
 	UFUNCTION()
 		void HandleGunShootProgress(float value);
-	
 
 	void UpdateGunRecoil();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gun")
-		float HipFire;
-	UCameraComponent* Owner_Camera;
-
-	UPROPERTY(ReplicatedUsing = OnRep_Drop)
-		FDropLocation DropLocation;
 
 	UFUNCTION()
 		void OnRep_Drop();
@@ -177,6 +189,16 @@ public:
 
 
 
+	UPROPERTY(BlueprintReadOnly, Replicated)
+		bool CanClick;
+
+
+	
+	bool Clicked;
+
+	UFUNCTION(Server, Reliable)
+		void UpdateCanClick();
+
 private:
 	FRotator Camera_InitialRotation;
 	FRotator Camera_TargetRotation;
@@ -184,9 +206,8 @@ private:
 	FVector InitialLocation;
 	FVector TargetLocation;
 
-	bool Clicked;
-	bool CanClick;
-	void UpdateCanClick();
+	
+	
 	void UpdateAmmo();
 	
 };

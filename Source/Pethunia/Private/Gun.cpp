@@ -14,8 +14,10 @@
 #include "Pethunia.h"
 #include "StealthCharacter.h"
 #include "UnrealNetwork.h"
+#include "Engine/Engine.h"
 
 
+#define print_str(str) UE_LOG(LogTemp,Warning,TEXT(str));
 
 // Sets default values
 AGun::AGun()
@@ -42,7 +44,9 @@ AGun::AGun()
 	CanClick = true;
 	isFiring = false;
 	isReloading = false;
-	GunOwner = false;
+	GunOwner = nullptr;
+
+	
 }
 
 // Called when the game starts or when spawned
@@ -76,6 +80,8 @@ void AGun::BeginPlay()
 void AGun::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	
 	if (!GunOwner)
 	{
 		
@@ -90,59 +96,57 @@ void AGun::HandleGunFloatingProgress(float value)
 	SetActorLocation(NewLocation);
 }
 
-void AGun::UpdateCanClick()
+// Is Called From Server
+void AGun::UpdateCanClick_Implementation()
 {
 	isFiring = false;
 	CanClick = true;
 }
 
-void AGun::FireWeapon(USkeletalMeshComponent* PlayerArms)
+
+
+void AGun::FireWeapon()
 {
-	if (HasAuthority())
+	if (!CanClick)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Server Dude"));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Client Dude"));
+		UE_LOG(LogTemp, Error, TEXT("U Can't Click ma G"));
+		return;
 	}
 
-	if (!CanClick) return;
-	Clicked = true;
-	isFiring = true;
-	CanClick = false;
 	if (WeaponFireMode == FireMode::MODE_Single)
 	{
-		FireWeaponSingle(PlayerArms);
-		FTimerHandle CanClickHandle;
-		GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
+		if (Role < ROLE_Authority)
+			Server_ProccessWeaponSingleFire();
 	}
 	else if (WeaponFireMode == FireMode::MODE_Auto)
 	{
-		
-		
 		if (Role < ROLE_Authority)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Trying to execute Server_ProccessWeaponFire"));
-			Server_ProccessWeaponFire();
+			Server_ProccessWeaponAutoFire();
 		}
-
-
-	}
-	else if (WeaponFireMode == FireMode::MODE_Burst)
-	{
-
 	}
 }
 
-void AGun::Server_ProccessWeaponFire_Implementation()
+
+void AGun::Server_ProccessWeaponSingleFire_Implementation()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Reached Server_ProccessWeaponFire"));
-	FTimerDelegate ShootDelegate = FTimerDelegate::CreateUObject(this, &AGun::FireWeaponAuto);
-	GetWorldTimerManager().SetTimer(ShootHandle, ShootDelegate, RateOfFire, true);
+	Clicked = true;
+	isFiring = true;
+	CanClick = false;
+	FireWeaponSingle();
+	FTimerHandle CanClickHandle;
+	GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
 }
 
-void AGun::FireWeaponSingle(USkeletalMeshComponent* PlayerArms)
+void AGun::Server_ProccessWeaponAutoFire_Implementation()
+{
+	Clicked = true;
+	isFiring = true;
+	CanClick = false;
+	GetWorldTimerManager().SetTimer(ShootHandle, this, &AGun::FireWeaponAuto, RateOfFire, true);
+}
+
+void AGun::FireWeaponSingle()
 {
 	if (CurrentAmmo <= 0) return;
 
@@ -178,37 +182,25 @@ void AGun::FireWeaponSingle(USkeletalMeshComponent* PlayerArms)
 	}
 	CurrentAmmo--;
 
-	
-	// Animations
-	if (ArmsFire01Animation == nullptr || ArmsFire02Animation == nullptr || WeaponFire01Animation == nullptr || WeaponFire02Animation == nullptr) return;
-
-	if (FMath::RandRange(1, 2) == 1)
-	{
-		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-	}
-	else
-	{
-		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
-	}
-	
-	GunShakeTimeline.PlayFromStart();
+	PlayShootingAnimations();
 }
 
 void AGun::FireWeaponAuto()
 {
-	
-	if (!Clicked || CurrentAmmo <= 0)
+	if (CurrentAmmo <= 0)
 	{
 		FTimerHandle CanClickHandle;
-		GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
 		GetWorldTimerManager().ClearTimer(ShootHandle);
+		GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
 		return;
 	}
 	
-	if (!Owner_Camera) return;
-	
+	if (!Owner_Camera)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No Camera"));
+		return;
+	}
+
 	// Action
 	FVector Start = Owner_Camera->GetComponentLocation();
 	FVector Direction = Owner_Camera->GetForwardVector() * ShootDistance;
@@ -226,7 +218,6 @@ void AGun::FireWeaponAuto()
 	CollisionParams.AddIgnoredActor(this);
 	CollisionParams.bTraceComplex = true;
 	bool hasHit = GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECollisionChannel::ECC_Visibility, CollisionParams);
-	UE_LOG(LogTemp, Warning, TEXT("Bullet Shot"));
 	if (hasHit)
 	{
 		DrawDebugLine(GetWorld(), Start, Hit.Location, FColor::Green, false, 2, false);
@@ -242,11 +233,45 @@ void AGun::FireWeaponAuto()
 		DrawDebugLine(GetWorld(), Start, End, FColor::Red, false, 2, false);
 	}
 	CurrentAmmo--;
+
+	PlayShootingAnimations();
 }
 
+void AGun::PlayShootingAnimations_Implementation()
+{
+	// Animations
+	if (ArmsFire01Animation == nullptr || ArmsFire02Animation == nullptr || WeaponFire01Animation == nullptr || WeaponFire02Animation == nullptr) return;
+
+	if (FMath::RandRange(1, 2) == 1)
+	{
+		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire01Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+	}
+	else
+	{
+		GunMesh->GetAnimInstance()->Montage_Play(WeaponFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+		PlayerArms->GetAnimInstance()->Montage_Play(ArmsFire02Animation, 1.1f, EMontagePlayReturnType::MontageLength, 0, true);
+	}
+
+	GunShakeTimeline.PlayFromStart();
+}
+
+/*
+	@Called from StealthCharacter.cpp when player releases fire key
+*/
 void AGun::StopFire()
 {
+	UE_LOG(LogTemp, Warning, TEXT("STOP FIRE"));
+	if (Role < ROLE_Authority)
+		Server_StopFire();
+}
+
+void AGun::Server_StopFire_Implementation()
+{
 	Clicked = false;
+	FTimerHandle CanClickHandle;
+	GetWorldTimerManager().ClearTimer(ShootHandle);
+	GetWorldTimerManager().SetTimer(CanClickHandle, this, &AGun::UpdateCanClick, FireDelay);
 }
 
 void AGun::ReloadWeapon(USkeletalMeshComponent * PlayerArms)
@@ -318,15 +343,18 @@ void AGun::UpdateGunRecoil()
 void AGun::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
+	
 	DOREPLIFETIME(AGun, CurrentAmmo);
 	DOREPLIFETIME(AGun, NumberOfMagazines);
 	DOREPLIFETIME_CONDITION(AGun, DropLocation, COND_SkipOwner);
+	DOREPLIFETIME(AGun, CanClick);
+	DOREPLIFETIME(AGun, PlayerArms);
+	
+	
 }
 
 void AGun::OnRep_Drop()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Update On Drop"));
 	SetActorLocation(DropLocation.endLocation);
 }
 
@@ -339,4 +367,6 @@ void AGun::RemoveOwnership()
 {
 	GunOwner = nullptr;
 	Owner_Camera = nullptr;
+	SetOwner(nullptr);
+	
 }

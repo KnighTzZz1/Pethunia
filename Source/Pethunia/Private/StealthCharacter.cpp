@@ -23,6 +23,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "DeathMatch.h"
 #include "Pethunia.h"
+#include "Engine/Engine.h"
 
 #define print(text) if(GEngine) GEngine->AddOnScreenDebugMessage(-1,1.5f,FColor::Green, TEXT(text));
 #define printVector(vector) UE_LOG(LogTemp,Warning,TEXT("Vector: %s"),*vector.ToString());
@@ -184,7 +185,7 @@ void AStealthCharacter::CrouchStart()
 			GetCharacterMovement()->BrakingDecelerationWalking = 0;
 			isSliding = true;
 		}
-
+		
 	}
 	Super::Crouch();
 	
@@ -293,21 +294,27 @@ void AStealthCharacter::TryPickingUpWeapon(AGun* weapon)
 		inv.Add(1, weapon);
 		ActiveWeapon = weapon;
 		ActiveWeapon->GunOwner = this;
+		ActiveWeapon->SetOwner(this);
 		ActiveWeapon->Owner_Camera = Camera;
+		ActiveWeapon->PlayerArms = Arms;
 		SetupAnims();
 	}
 	else if (*inv.Find(1) == nullptr)
 	{
 		inv.Add(1, weapon);
 		weapon->GunOwner = this;
+		weapon->SetOwner(this);
 		weapon->Owner_Camera = Camera;
+		weapon->PlayerArms = Arms;
 		PutWeaponOnBack(weapon);
 	}
 	else if (*inv.Find(2) == nullptr)
 	{
 		inv.Add(2, weapon);
 		weapon->GunOwner = this;
+		weapon->SetOwner(this);
 		weapon->Owner_Camera = Camera;
+		weapon->PlayerArms = Arms;
 		PutWeaponOnBack(weapon);
 	}
 	else
@@ -322,7 +329,7 @@ void AStealthCharacter::LMB()
 	if (!ActiveWeapon) return;
 	if (ActiveWeapon->isReloading) return;
 	
-	ActiveWeapon->FireWeapon(Arms);
+	ActiveWeapon->FireWeapon();
 }
 
 void AStealthCharacter::Server_LMB_Implementation()
